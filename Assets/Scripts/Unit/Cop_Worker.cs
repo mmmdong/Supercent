@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -7,6 +8,30 @@ public class Cop_Worker : Cop
 {
     private Vector3 spawnPos;
     private CancellationTokenSource patrolCts;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        propStack.Add(Define.PooledEnum.Prop_Handcuff, new Stack<PooledObject>());
+    }
+
+    public override void SetProp(Define.PooledEnum prop)
+    {
+        if (prop != Define.PooledEnum.Prop_Handcuff) return;
+
+        var propObj = ObjectPool.GetObject<Prop>(prop, handCuffPar);
+        propObj.SetLocalPosition(Vector3.up * Define.STACK_GAP * propStack[prop].Count);
+        propStack[prop].Push(propObj);
+    }
+
+    public override bool ConsumeProp(Define.PooledEnum propType)
+    {
+        if (propType != Define.PooledEnum.Prop_Handcuff) return false;
+        if (!propStack[propType].TryPop(out var propObj)) return false;
+
+        propObj.Release();
+        return true;
+    }
 
     public void StartPatrol(Vector3 spawnPos)
     {

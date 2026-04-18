@@ -12,7 +12,7 @@ public class TrayTrigger : MonoBehaviour
         if (deltaTime < Define.PROPSETTING_TIME) return;
         if (machine.HandCuffStk.Count == 0) return;
 
-        if (other.TryGetComponent(out Unit unit))
+        if (other.TryGetComponent(out Cop unit))
         {
             machine.HandCuffStk.Pop().Release();
             unit.SetProp(Define.PooledEnum.Prop_Handcuff);
@@ -22,7 +22,7 @@ public class TrayTrigger : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.TryGetComponent(out Unit _))
+        if (other.TryGetComponent(out Cop _))
             deltaTime = 0f;
     }
 }

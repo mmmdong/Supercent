@@ -22,7 +22,7 @@ public class ZoneTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.TryGetComponent(out Unit unit))
+        if (other.TryGetComponent(out Cop unit))
         {
             OnEnterCallback(unit);
         }
@@ -34,7 +34,7 @@ public class ZoneTrigger : MonoBehaviour
         if (deltaTime < Define.PROPSETTING_TIME)
             return;
 
-        if (other.TryGetComponent(out Unit unit))
+        if (other.TryGetComponent(out Cop unit))
         {
             if (unit.ConsumeProp(propType))
             {
@@ -46,7 +46,7 @@ public class ZoneTrigger : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.TryGetComponent(out Unit unit))
+        if (other.TryGetComponent(out Cop unit))
         {
             deltaTime = 0f;
             OnExitCallback(unit);
