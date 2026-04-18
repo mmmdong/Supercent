@@ -28,7 +28,7 @@ public class BankTrigger : MonoBehaviour
         {
             money.Release();
             player.SetProp(Define.PooledEnum.Prop_Money);
-            await UniTask.Delay(TimeSpan.FromSeconds(0.05f));
+            await UniTask.Delay(TimeSpan.FromSeconds(Define.PROPSETTING_TIME));
         }
 
         isProcessing = false;
@@ -41,7 +41,7 @@ public class BankTrigger : MonoBehaviour
             var index = moneyStack.Count / propTray.Length;
             var par = propTray[moneyStack.Count % propTray.Length];
             var prop = ObjectPool.GetObject<Prop_Money>(Define.PooledEnum.Prop_Money, par);
-            prop.SetGlobalPosition(par.position + Vector3.up * 0.25f * index);
+            prop.SetGlobalPosition(par.position + Vector3.up * Define.STACK_GAP * index);
             prop.SetGlobalRotation(Quaternion.identity);
             prop.SetInitEffect();
             moneyStack.Push(prop);
@@ -49,7 +49,7 @@ public class BankTrigger : MonoBehaviour
         else
         {
             var prop = ObjectPool.GetObject<Prop_Money>(Define.PooledEnum.Prop_Money, propTray[0]);
-            prop.SetGlobalPosition(propTray[0].position + Vector3.up * 0.25f * moneyStack.Count);
+            prop.SetGlobalPosition(propTray[0].position + Vector3.up * Define.STACK_GAP * moneyStack.Count);
             prop.SetGlobalRotation(Quaternion.identity);
             prop.SetInitEffect();
             moneyStack.Push(prop);

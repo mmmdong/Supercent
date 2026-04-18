@@ -25,7 +25,7 @@ public class GetTrigger : ZoneTrigger
         {
             var index = propStack.Count / propTray.Length;
             var prop = ObjectPool.GetObject<Prop>(propType, propTray[propStack.Count % propTray.Length]);
-            prop.SetLocalPosition(Vector3.zero + Vector3.up * 0.25f * index);
+            prop.SetLocalPosition(Vector3.zero + Vector3.up * Define.STACK_GAP * index);
             prop.SetLocalRotation(Quaternion.identity);
             prop.SetInitEffect();
             propStack.Push(prop);
@@ -33,7 +33,7 @@ public class GetTrigger : ZoneTrigger
         else
         {
             var prop = ObjectPool.GetObject<Prop>(propType, propTray[0]);
-            prop.SetLocalPosition(Vector3.zero + Vector3.up * 0.25f * propStack.Count);
+            prop.SetLocalPosition(Vector3.zero + Vector3.up * Define.STACK_GAP * propStack.Count);
             prop.SetLocalRotation(Quaternion.identity);
             prop.SetInitEffect();
             propStack.Push(prop);

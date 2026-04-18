@@ -11,6 +11,7 @@ public class Player : Unit
     [Header("Object")] [SerializeField] private Transform[] propMainPar;
     [SerializeField] private Transform handCuffPar;
     [SerializeField] private TMP_Text maxText;
+    [SerializeField] private GameObject humanBase, drill, tractor;
 
     private Dictionary<Define.PooledEnum, Stack<PooledObject>> propStack = new();
     public Dictionary<Define.PooledEnum, Stack<PooledObject>> PropStack => propStack;
@@ -44,8 +45,20 @@ public class Player : Unit
 
     public void SetPickingMode(bool picking)
     {
-        rockDestroyController.gameObject.SetActive(picking);
-        animator.SetBool(Define.ANIMATION_PICKING, picking);
+        switch (level)
+        {
+            case 1:
+                rockDestroyController.gameObject.SetActive(picking);
+                animator.SetBool(Define.ANIMATION_PICKING, picking);
+                return;
+            case 2:
+                drill.SetActive(picking);
+                return;
+        }
+        
+        // Lv 3 이상
+        humanBase.SetActive(!picking);
+        tractor.SetActive(picking);
     }
 
     public void SetTakeMode(bool take)
@@ -90,7 +103,7 @@ public class Player : Unit
     private void GetObject(Define.PooledEnum prop, Transform par)
     {
         var propObj = ObjectPool.GetObject<Prop>(prop, par);
-        propObj.SetLocalPosition(Vector3.zero + Vector3.up * 0.25f * propStack[prop].Count);
+        propObj.SetLocalPosition(Vector3.zero + Vector3.up * Define.STACK_GAP * propStack[prop].Count);
         var quaternion = Quaternion.identity;
         switch (prop)
         {
@@ -174,5 +187,7 @@ public class Player : Unit
     public void LevelUp()
     {
         level++;
+        var effect = ObjectPool.GetObject<Pool_Particle>(Define.PooledEnum.LevelUp_Particle, transform);
+        effect.SetLocalPosition(Vector3.up * 0.1f);
     }
 }

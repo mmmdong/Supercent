@@ -39,7 +39,7 @@ public class TrayTrigger : MonoBehaviour
             var handCuff = machine.HandCuffStk.Pop() as Prop_Handcuff;
             handCuff.Release();
             player.SetProp(Define.PooledEnum.Prop_Handcuff);
-            await UniTask.Delay(TimeSpan.FromSeconds(0.05f), cancellationToken: cts.Token);
+            await UniTask.Delay(TimeSpan.FromSeconds(Define.PROPSETTING_TIME), cancellationToken: cts.Token);
         }
     }
 }

@@ -15,8 +15,7 @@ public class ConsumeTrigger : ZoneTrigger
 
     public void SetCallback(Action callback)
     {
-        onConsumeComplete += () => gameObject.SetActive(false);
-        onConsumeComplete += callback;
+        onConsumeComplete = callback;
     }
 
     protected override void Awake()
@@ -24,6 +23,17 @@ public class ConsumeTrigger : ZoneTrigger
         base.Awake();
         propType = Define.PooledEnum.Prop_Money;
         gauge.fillAmount = 0f;
+    }
+
+    private void Start()
+    {
+        costText.text = $"{cost}";
+    }
+
+    private void UpdateCostText()
+    {
+        cost *= 2;
+        costText.text = $"{cost}";
     }
 
     protected override void OnEnterCallback(Player player)
@@ -53,6 +63,16 @@ public class ConsumeTrigger : ZoneTrigger
             accumulatedCost = 0;
             gauge.fillAmount = 0f;
             onConsumeComplete?.Invoke();
+            switch (consumeDestType)
+            {
+                case Define.ConsumeDest.Hire_Cop:
+                case Define.ConsumeDest.Hire_Worker:
+                    gameObject.SetActive(false);
+                    break;
+                case Define.ConsumeDest.LevelUp:
+                    UpdateCostText();
+                    break;
+            }
         }
     }
 
@@ -60,6 +80,5 @@ public class ConsumeTrigger : ZoneTrigger
     {
         base.OnExitCallback(player);
         backGround.color = Color.white;
-        SetCallback(null);
     }
 }

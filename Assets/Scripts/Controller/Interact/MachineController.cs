@@ -12,8 +12,8 @@ public class MachineController : InteractController
     private readonly int JUMP_COUNT = 1;
     private readonly float ROCK_JUMP_DURATION = 1f;
     private readonly float HANDCUFF_JUMP_DURATION = 0.5f;
-    private readonly float SCROLL_DURATION = 3.5f;
-    private readonly float RAIL_MOVE_DISTANCE = 2.5f;
+    private readonly float SCROLL_DURATION = 2.5f;
+    private readonly float RAIL_MOVE_DISTANCE = 3f;
     private readonly Vector3 TRAY_LOCAL_POS = new Vector3(-3.75f, 0.25f, 0f);
 
     #endregion
@@ -47,7 +47,7 @@ public class MachineController : InteractController
     private void StartRailScroll()
     {
         var uvOffset = RAIL_MOVE_DISTANCE / (belt.localBounds.size.x * belt.transform.localScale.x);
-        DOTween.To(() => offset.y, y => offset.y = y, offset.y - uvOffset, SCROLL_DURATION)
+        DOTween.To(() => offset.y, y => offset.y = y, offset.y - uvOffset, SCROLL_DURATION * 2.125f)
             .SetEase(Ease.Linear)
             .SetLoops(-1, LoopType.Incremental)
             .OnUpdate(() =>

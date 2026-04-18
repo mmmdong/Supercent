@@ -8,12 +8,6 @@ using UnityEngine;
 
 public class ZoneTrigger : MonoBehaviour
 {
-    #region Readonly Fields
-
-    private readonly float CONSUMETIME = 0.1f;
-
-    #endregion
-
     [SerializeField] protected Define.PooledEnum propType;
     [SerializeField] protected Transform[] propTray;
 
@@ -37,7 +31,7 @@ public class ZoneTrigger : MonoBehaviour
     private void OnTriggerStay(Collider other)
     {
         deltaTime += Time.deltaTime;
-        if (deltaTime < CONSUMETIME)
+        if (deltaTime < Define.PROPSETTING_TIME)
             return;
 
         if (other.TryGetComponent(out Player player))

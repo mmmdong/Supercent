@@ -17,6 +17,14 @@ public class Define
     public static readonly int MONEY_COST = 10;
 
     #endregion
+
+    #region FLOAT
+
+    public static readonly float PROPSETTING_TIME = 0.05f;
+    public static readonly float STACK_GAP = 0.15f;
+
+    #endregion
+    
     #region VECTOR3
 
     public static readonly Vector3 CAM_POS = new Vector3(6, 10, -6);
@@ -37,6 +45,7 @@ public class Define
         
         // ÆÄÆ¼Å¬
         Hit_Particle,
+        LevelUp_Particle,
         
         // À¯´Ö
         Prisoner,
