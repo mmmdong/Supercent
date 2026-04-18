@@ -44,7 +44,7 @@ public class Player : Unit
         => Quaternion.Euler(0, mainCam.transform.rotation.eulerAngles.y, 0) * base.SetDirection(direction);
 
     public void SetPickingMode(bool picking)
-    {
+    { 
         switch (level)
         {
             case 1:

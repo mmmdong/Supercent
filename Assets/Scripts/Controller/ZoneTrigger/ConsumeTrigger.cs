@@ -28,8 +28,6 @@ public class ConsumeTrigger : ZoneTrigger
     private void Start()
     {
         costText.text = $"{cost}";
-        if (consumeDestType == Define.ConsumeDest.Hire_Worker)
-            UnitManager.instance.SpawnWorkers();
     }
 
     private void UpdateCostText()
