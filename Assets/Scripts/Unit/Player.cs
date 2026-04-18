@@ -66,13 +66,14 @@ public class Player : Unit
         animator.SetBool(Define.ANIMATION_TAKE, take);
     }
 
-    public void OnPickingEvent()
+    public override void OnPickingEvent()
     {
         rockDestroyController.RockDestroy();
     }
 
-    public void SetProp(Define.PooledEnum prop)
+    public override void SetProp(Define.PooledEnum prop)
     {
+        base.SetProp(prop);
         if (prop == Define.PooledEnum.Prop_Handcuff)
         {
             GetObject(prop, handCuffPar);

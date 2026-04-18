@@ -38,6 +38,7 @@ public class ZoneTrigger : MonoBehaviour
         {
             if (player.DropProp(propType))
             {
+                deltaTime = 0f;
                 OnStayCallback(player);
             }
         }
@@ -47,6 +48,7 @@ public class ZoneTrigger : MonoBehaviour
     {
         if (other.TryGetComponent(out Player player))
         {
+            deltaTime = 0f;
             OnExitCallback(player);
         }
     }
@@ -55,13 +57,11 @@ public class ZoneTrigger : MonoBehaviour
     {
     }
 
-    protected virtual void OnStayCallback(Player player)
+    public virtual void OnStayCallback(Player player)
     {
-        deltaTime = 0f;
     }
 
     protected virtual void OnExitCallback(Player player)
     {
-        deltaTime = 0f;
     }
 }

@@ -58,6 +58,21 @@ public class Unit : PooledObject
         transform.position += dir.normalized * moveSpeed * Time.deltaTime;
     }
 
+    public virtual void OnPickingEvent()
+    {
+    }
+
+    public virtual void SetProp(Define.PooledEnum prop)
+    {
+    }
+
+    protected void StopMove()
+    {
+        moveCts?.Cancel();
+        moveCts?.Dispose();
+        moveCts = null;
+    }
+
     public void PlayAnimation(string animationName) => animator.SetTrigger(animationName);
     protected virtual Vector3 SetDirection(Vector3 direction) => direction;
 

@@ -28,6 +28,8 @@ public class ConsumeTrigger : ZoneTrigger
     private void Start()
     {
         costText.text = $"{cost}";
+        if (consumeDestType == Define.ConsumeDest.Hire_Worker)
+            UnitManager.instance.SpawnWorkers();
     }
 
     private void UpdateCostText()
@@ -45,6 +47,7 @@ public class ConsumeTrigger : ZoneTrigger
             case Define.ConsumeDest.Hire_Cop:
                 break;
             case Define.ConsumeDest.Hire_Worker:
+                SetCallback(UnitManager.instance.SpawnWorkers);
                 break;
             case Define.ConsumeDest.LevelUp:
                 SetCallback(player.LevelUp);
@@ -52,7 +55,7 @@ public class ConsumeTrigger : ZoneTrigger
         }
     }
 
-    protected override void OnStayCallback(Player player)
+    public override void OnStayCallback(Player player)
     {
         base.OnStayCallback(player);
         accumulatedCost += Define.MONEY_COST;

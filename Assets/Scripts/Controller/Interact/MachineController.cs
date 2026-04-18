@@ -20,6 +20,7 @@ public class MachineController : InteractController
 
     [SerializeField] private MeshRenderer belt;
     [SerializeField] private ZoneTrigger zone;
+    public ZoneTrigger Zone => zone;
 
     private static readonly int MainTexSt = Shader.PropertyToID("_MainTex_ST");
 

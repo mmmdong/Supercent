@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class RockDestroyController : MonoBehaviour
 {
-    [SerializeField] private Player player;
+    [SerializeField] private Unit unit;
     private Stack<Rock> rockStack = new Stack<Rock>();
 
     private void OnTriggerEnter(Collider other)
@@ -24,7 +24,7 @@ public class RockDestroyController : MonoBehaviour
                 return;
 
             rock.Release();
-            player.SetProp(Define.PooledEnum.Prop_Rock);
+            unit.SetProp(Define.PooledEnum.Prop_Rock);
         }
 
         rockStack.Clear();

@@ -18,7 +18,7 @@ public class GetTrigger : ZoneTrigger
         spriteRenderer.color = Color.green;
     }
 
-    protected override void OnStayCallback(Player player)
+    public override void OnStayCallback(Player player)
     {
         base.OnStayCallback(player);
         if (propTray.Length > 1)

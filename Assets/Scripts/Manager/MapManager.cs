@@ -19,8 +19,11 @@ public class MapManager : MonoBehaviour
 
     [SerializeField] private Transform rockPar;
     [SerializeField] private BankTrigger bank;
-    public BankTrigger Bank => bank;
+    [SerializeField] private MachineController machine;
+    public MachineController Machine => machine;
     
+    public BankTrigger Bank => bank;
+
     private void Awake()
     {
         if (instance == null)
@@ -53,7 +56,7 @@ public class MapManager : MonoBehaviour
     private async UniTaskVoid RespawnAsync(Vector3 pos)
     {
         await UniTask.Delay(TimeSpan.FromSeconds(RESPAWN_INTERVAL));
-        
+
         var rock = ObjectPool.GetObject<Rock>(Define.PooledEnum.Rock, rockPar);
         rock.SetLocalPosition(pos);
         rock.SetInitEffect();

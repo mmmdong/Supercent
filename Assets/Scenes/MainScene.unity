@@ -591,6 +591,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rockPar: {fileID: 1880421295}
   bank: {fileID: 1715394459}
+  machine: {fileID: 4312961367201027146}
 --- !u!1 &231644367
 GameObject:
   m_ObjectHideFlags: 0
