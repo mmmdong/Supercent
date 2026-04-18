@@ -1795,9 +1795,9 @@ GameObject:
   - component: {fileID: 3649641205143905408}
   - component: {fileID: 5630134929281740280}
   - component: {fileID: 3529665252722625480}
-  - component: {fileID: -4068388948419979520}
+  - component: {fileID: 2870361468883688913}
   m_Layer: 0
-  m_Name: Cop
+  m_Name: Cop_Worker
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1901,7 +1901,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 1
---- !u!114 &-4068388948419979520
+--- !u!114 &2870361468883688913
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1910,10 +1910,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 8410226537106634584}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9121f1e30e9bdee4397a3fbf746fe78a, type: 3}
+  m_Script: {fileID: 11500000, guid: 05e2199325cee3448a4bce21267632e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 2.5
+  propMainPar: []
+  handCuffPar: {fileID: 4152733814015938995}
 --- !u!1 &8938317946878796668
 GameObject:
   m_ObjectHideFlags: 0

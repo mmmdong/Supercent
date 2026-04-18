@@ -61,7 +61,7 @@ public class Define
         // Unit
         Prisoner,
         Worker,
-        Cop
+        Cop_Worker
     }
 
     public enum ConsumeDest

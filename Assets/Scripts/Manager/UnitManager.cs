@@ -22,7 +22,7 @@ public class UnitManager : MonoBehaviour
     {
         var deskZone = MapManager.instance.Desk.DeskZone;
         var spawnPos = deskZone.transform.position;
-        var cop = ObjectPool.GetObject<Cop>(Define.PooledEnum.Cop, transform);
+        var cop = ObjectPool.GetObject<Cop_Worker>(Define.PooledEnum.Cop_Worker, transform);
         cop.transform.position = spawnPos;
         cop.StartPatrol(spawnPos);
     }

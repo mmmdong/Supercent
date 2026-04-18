@@ -5,7 +5,7 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
-public class Player : Unit
+public class Player : Cop
 {
     [Header("PlayerData")]
     public int level;
