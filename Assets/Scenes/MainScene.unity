@@ -593,6 +593,7 @@ MonoBehaviour:
   rockPar: {fileID: 1880421295}
   bank: {fileID: 1715394459}
   machine: {fileID: 4312961367201027146}
+  desk: {fileID: 2146338715}
 --- !u!1 &231644367
 GameObject:
   m_ObjectHideFlags: 0

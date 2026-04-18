@@ -785,6 +785,7 @@ MonoBehaviour:
   propEntry: {fileID: 2443243294127220122}
   belt: {fileID: 9120726588099173628}
   zone: {fileID: 436259434127269773}
+  tray: {fileID: 4080824120515285667}
 --- !u!1 &4938566135825121228
 GameObject:
   m_ObjectHideFlags: 0

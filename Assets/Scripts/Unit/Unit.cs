@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -6,6 +7,11 @@ using UnityEngine;
 public class Unit : PooledObject
 {
     [SerializeField] protected float moveSpeed = 5f;
+    [Header("Object")]
+    [SerializeField] protected Transform[] propMainPar;
+    [SerializeField] protected Transform handCuffPar;
+    
+    protected Dictionary<Define.PooledEnum, Stack<PooledObject>> propStack = new();
     protected Vector3 dir;
     protected Animator animator;
 

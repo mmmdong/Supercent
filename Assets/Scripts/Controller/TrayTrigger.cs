@@ -1,44 +1,28 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class TrayTrigger : MonoBehaviour
 {
     [SerializeField] private MachineController machine;
 
-    private CancellationTokenSource cts;
+    private float deltaTime;
 
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerStay(Collider other)
     {
-        cts = new CancellationTokenSource();
+        deltaTime += Time.deltaTime;
+        if (deltaTime < Define.PROPSETTING_TIME) return;
+        if (machine.HandCuffStk.Count == 0) return;
+
         if (other.TryGetComponent(out Unit unit))
         {
-            SetProp(unit).Forget();
+            machine.HandCuffStk.Pop().Release();
+            unit.SetProp(Define.PooledEnum.Prop_Handcuff);
+            deltaTime = 0f;
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.TryGetComponent(out Unit unit))
-        {
-            cts.Cancel();
-        }
-    }
-
-    private async UniTaskVoid SetProp(Unit Unit)
-    {
-        await UniTask.WaitUntil(() => machine.HandCuffStk.Count > 0, cancellationToken: cts.Token);
-        while (true)
-        {
-            await UniTask.WaitUntil(() => machine.HandCuffStk.Count > 0, cancellationToken: cts.Token);
-
-            var handCuff = machine.HandCuffStk.Pop() as Prop_Handcuff;
-            handCuff.Release();
-            Unit.SetProp(Define.PooledEnum.Prop_Handcuff);
-            await UniTask.Delay(TimeSpan.FromSeconds(Define.PROPSETTING_TIME), cancellationToken: cts.Token);
-        }
+        if (other.TryGetComponent(out Unit _))
+            deltaTime = 0f;
     }
 }

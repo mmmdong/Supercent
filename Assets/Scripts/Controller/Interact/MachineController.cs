@@ -14,14 +14,14 @@ public class MachineController : InteractController
     private readonly float HANDCUFF_JUMP_DURATION = 0.5f;
     private readonly float SCROLL_DURATION = 2.5f;
     private readonly float RAIL_MOVE_DISTANCE = 3f;
-    private readonly Vector3 TRAY_LOCAL_POS = new Vector3(-3.75f, 0.25f, 0f);
 
     #endregion
 
     [SerializeField] private MeshRenderer belt;
     [SerializeField] private ZoneTrigger zone;
-    [SerializeField] private TrayTrigger tray; 
     public ZoneTrigger Zone => zone;
+    [SerializeField] private TrayTrigger tray;
+    public TrayTrigger Tray => tray;
 
     private static readonly int MainTexSt = Shader.PropertyToID("_MainTex_ST");
 
@@ -85,7 +85,7 @@ public class MachineController : InteractController
                         .SetRelative()
                         .SetEase(Ease.Linear);
                     handCuff.transform.DOLocalJump(
-                            TRAY_LOCAL_POS + Vector3.up * 0.1f * handCuffStk.Count,
+                            tray.transform.localPosition + Vector3.up * 0.25f + Vector3.up * 0.1f * handCuffStk.Count,
                             JUMP_POWER,
                             JUMP_COUNT,
                             HANDCUFF_JUMP_DURATION)

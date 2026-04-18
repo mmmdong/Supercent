@@ -7,18 +7,15 @@ using UnityEngine;
 
 public class Player : Unit
 {
-    [Header("PlayerData")] public int level;
-    [Header("Object")] [SerializeField] private Transform[] propMainPar;
-    [SerializeField] private Transform handCuffPar;
+    [Header("PlayerData")]
+    public int level;
+    
     [SerializeField] private TMP_Text maxText;
     [SerializeField] private GameObject humanBase, drill, tractor;
 
-    private Dictionary<Define.PooledEnum, Stack<PooledObject>> propStack = new();
-    public Dictionary<Define.PooledEnum, Stack<PooledObject>> PropStack => propStack;
 
     // propMainPar 슬롯에 배정된 prop 타입 순서
-    private List<Define.PooledEnum> _parOrder = new List<Define.PooledEnum>();
-
+    private List<Define.PooledEnum> parOrder = new List<Define.PooledEnum>();
     private RockDestroyController rockDestroyController;
     private Camera mainCam;
     private bool isOnMax;
@@ -82,18 +79,18 @@ public class Player : Unit
         }
 
         // 처음 획득하는 종류면 다음 빈 par 슬롯 배정
-        if (!_parOrder.Contains(prop))
+        if (!parOrder.Contains(prop))
         {
-            if (_parOrder.Count >= propMainPar.Length)
+            if (parOrder.Count >= propMainPar.Length)
             {
                 ShowMaxText();
                 return;
             }
 
-            _parOrder.Add(prop);
+            parOrder.Add(prop);
         }
 
-        GetObject(prop, propMainPar[_parOrder.IndexOf(prop)]);
+        GetObject(prop, propMainPar[parOrder.IndexOf(prop)]);
     }
 
     private void GetObject(Define.PooledEnum prop, Transform par)
@@ -136,16 +133,16 @@ public class Player : Unit
 
     public void UpdateStackPar()
     {
-        for (var i = 0; i < _parOrder.Count; i++)
+        for (var i = 0; i < parOrder.Count; i++)
         {
-            if (propStack[_parOrder[i]].Count > 0) continue;
+            if (propStack[parOrder[i]].Count > 0) continue;
 
-            _parOrder.RemoveAt(i);
+            parOrder.RemoveAt(i);
 
             // i번 이후 슬롯을 한 칸 앞 par로 이동
-            for (var j = i; j < _parOrder.Count; j++)
+            for (var j = i; j < parOrder.Count; j++)
             {
-                foreach (var propObj in propStack[_parOrder[j]])
+                foreach (var propObj in propStack[parOrder[j]])
                     propObj.transform.SetParent(propMainPar[j], false);
             }
 

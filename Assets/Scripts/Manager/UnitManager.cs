@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class UnitManager : MonoBehaviour
@@ -12,11 +13,18 @@ public class UnitManager : MonoBehaviour
             instance = this;
     }
 
+    private void Start()
+    {
+        SpawnCop();
+    }
+
     public void SpawnCop()
     {
         var deskZone = MapManager.instance.Desk.DeskZone;
+        var spawnPos = deskZone.transform.position;
         var cop = ObjectPool.GetObject<Cop>(Define.PooledEnum.Cop, transform);
-        cop.transform.position = deskZone.transform.position;
+        cop.transform.position = spawnPos;
+        cop.StartPatrol(spawnPos);
     }
 
     public void SpawnWorkers()

@@ -21,6 +21,7 @@ public class Define
     public static readonly int MONEY_COST = 10;
     public static readonly int WORKER_COUNT = 3;
     public static readonly int PRISONER_MONEY_COUNT = 2;
+    public static readonly int COP_HANDCUFF_THRESHOLD = 10;
 
     #endregion
 
@@ -30,6 +31,8 @@ public class Define
     public static readonly float STACK_GAP = 0.15f;
     public static readonly float ARRIVE_THRESHOLD = 0.15f;
     public static readonly float WORKER_PATROL_DISTANCE = 14f;
+    public static readonly float COP_HANDCUFF_WAIT_TIME = 3f;
+    public static readonly float COP_SPAWN_WAIT_TIME = 3f;
 
     #endregion
     
