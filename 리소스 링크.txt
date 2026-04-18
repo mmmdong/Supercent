@@ -1,5 +1,6 @@
 리소스 링크
 효과 : https://assetstore.unity.com/packages/vfx/particles/hit-impact-effects-free-218385#description
+	https://assetstore.unity.com/packages/vfx/particles/cartoon-fx-remaster-free-109565
 곡괭이 : https://skfb.ly/oJ6Yq
 울타리 : https://skfb.ly/6WT7P
 바위 : https://skfb.ly/6yKvC
@@ -9,3 +10,4 @@
 책상 : https://skfb.ly/6ZJXV
 검문소 : https://skfb.ly/oLHO7
 드릴 : https://skfb.ly/6WYSV
+트랙터 : https://skfb.ly/YTTT
