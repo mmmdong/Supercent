@@ -13,11 +13,6 @@ public class UnitManager : MonoBehaviour
             instance = this;
     }
 
-    private void Start()
-    {
-        SpawnCop();
-    }
-
     public void SpawnCop()
     {
         var deskZone = MapManager.instance.Desk.DeskZone;

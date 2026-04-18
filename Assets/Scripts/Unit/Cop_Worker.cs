@@ -51,10 +51,15 @@ public class Cop_Worker : Cop
 
             await MoveToTask(trayPos, ct);
 
-            if (machine.HandCuffStk.Count < Define.COP_HANDCUFF_THRESHOLD)
+            var handcuffStack = propStack[Define.PooledEnum.Prop_Handcuff];
+            var shouldWait = machine.HandCuffStk.Count > 0
+                          && handcuffStack.Count < Define.COP_HANDCUFF_THRESHOLD;
+
+            if (shouldWait)
             {
                 await UniTask.WhenAny(
-                    UniTask.WaitUntil(() => machine.HandCuffStk.Count >= Define.COP_HANDCUFF_THRESHOLD, cancellationToken: ct),
+                    UniTask.WaitUntil(() => machine.HandCuffStk.Count == 0, cancellationToken: ct),
+                    UniTask.WaitUntil(() => handcuffStack.Count >= Define.COP_HANDCUFF_THRESHOLD, cancellationToken: ct),
                     UniTask.Delay(TimeSpan.FromSeconds(Define.COP_HANDCUFF_WAIT_TIME), cancellationToken: ct)
                 );
             }
