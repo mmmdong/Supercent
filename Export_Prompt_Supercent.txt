@@ -1,0 +1,1695 @@
+╭─── Claude Code v2.1.114 ─────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting        │
+│             Welcome back 사나이 김동현!            │ started                 │
+│                                                    │ Run /init to create a … │
+│                       ▐▛███▜▌                      │ ─────────────────────── │
+│                      ▝▜█████▛▘                     │ Recent activity         │
+│                        ▘▘ ▝▝                       │ 11h ago  belt localsca… │
+│  Sonnet 4.6 · Claude Pro · clxlzl1234@gmail.com's  │ 1d ago   Player.cs 에…  │
+│  Organization                                      │ 1d ago   JoyStick.cs …  │
+│            D:\Supercent\Prison\Supercent           │ /resume for more        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+  ↑ Install the PyCharm plugin from the JetBrains Marketplace: https://docs.claude.com/s/claude-code-jetbrains
+
+❯ MoveTo 함수랑, MoveAsync 함수를 Unit.cs의 MoveDirection을 이용해서            
+  리팩토링해줘. 다형성을 꼭 지켜줘                                              
+
+● 관련 파일들을 먼저 읽어볼게요.
+
+  Searched for 5 patterns, read 1 file (ctrl+o to expand)
+
+● MoveTo와 MoveAsync를 Unit으로 올려서 공통 이동 로직을 베이스 클래스로 분리하는
+   리팩토링이군요. MoveDirection이 이미 virtual이라 다형성도 자연스럽게
+  유지됩니다.
+
+  Read 2 files (ctrl+o to expand)
+
+● MoveTo/MoveAsync를 Unit으로 올리고, Prisoner에서 중복 코드를 제거하겠습니다.
+
+● Write(D:/Supercent/Supercent/Assets/Scripts/Unit/Unit.cs)
+  ⎿  Added 48 lines, removed 3 lines
+       1 -using System.Collections;                                      
+       2 -using System.Collections.Generic;                              
+       1 +using System;                                                  
+       2 +using System.Threading;                                        
+       3 +using Cysharp.Threading.Tasks;                                 
+       4  using UnityEngine;
+       5  
+       6  public class Unit : PooledObject
+       7  {
+       8 +    private const float ARRIVE_THRESHOLD = 0.15f;              
+       9 +                                                               
+      10      [SerializeField] private float moveSpeed = 5f;
+      11      private Vector3 dir;
+      12      protected Animator animator;
+      13  
+      14 +    private CancellationTokenSource _moveCts;                  
+      15 +                                                               
+      16      protected override void Awake()
+      17      {
+      18          base.Awake();
+      19          animator = GetComponent<Animator>();
+      20      }
+      21  
+      22 +    public void MoveTo(Vector3 targetPos, Action onArrived = nu
+         +ll)                                                            
+      23 +    {                                                          
+      24 +        _moveCts?.Cancel();                                    
+      25 +        _moveCts?.Dispose();                                   
+      26 +        _moveCts = new CancellationTokenSource();              
+      27 +                                                               
+      28 +        MoveAsync(new Vector3(targetPos.x, transform.position.y
+         +, targetPos.z), onArrived, _moveCts.Token).Forget();           
+      29 +    }                                                          
+      30 +                                                               
+      31 +    private async UniTaskVoid MoveAsync(Vector3 targetPos, Acti
+         +on onArrived, CancellationToken ct)                            
+      32 +    {                                                          
+      33 +        PlayAnimation(Define.ANIMATION_RUN);                   
+      34 +                                                               
+      35 +        while (!ct.IsCancellationRequested)                    
+      36 +        {                                                      
+      37 +            var diff = targetPos - transform.position;         
+      38 +            diff.y = 0f;                                       
+      39 +                                                               
+      40 +            if (diff.magnitude <= ARRIVE_THRESHOLD)            
+      41 +            {                                                  
+      42 +                transform.position = targetPos;                
+      43 +                break;                                         
+      44 +            }                                                  
+      45 +                                                               
+      46 +            MoveDirection(diff);                               
+      47 +            await UniTask.Yield(PlayerLoopTiming.Update, ct);  
+      48 +        }                                                      
+      49 +                                                               
+      50 +        if (ct.IsCancellationRequested) return;                
+      51 +                                                               
+      52 +        PlayAnimation(Define.ANIMATION_IDLE);                  
+      53 +        onArrived?.Invoke();                                   
+      54 +    }                                                          
+      55 +                                                               
+      56      public virtual void MoveDirection(Vector3 direction)
+      57      {
+      58          dir = SetDirection(direction);
+     ...
+      62  
+      63      public void PlayAnimation(string animationName) => animator
+          .SetTrigger(animationName);
+      64      protected virtual Vector3 SetDirection(Vector3 direction) =
+          > direction;
+      26 -}                                                              
+      65   No newline at end of file
+      66 +                                                               
+      67 +    protected virtual void OnDestroy()                         
+      68 +    {                                                          
+      69 +        _moveCts?.Cancel();                                    
+      70 +        _moveCts?.Dispose();                                   
+      71 +    }                                                          
+      72 +}                                                              
+
+● Write(D:/Supercent/Supercent/Assets/Scripts/Unit/Prisoner.cs)
+  ⎿  Added 3 lines, removed 53 lines
+       1 -using System;                                                  
+       2 -using System.Threading;                                        
+       3 -using Cysharp.Threading.Tasks;                                 
+       1  using UnityEngine;
+       2  using UnityEngine.UI;
+       3  
+       4  public class Prisoner : Unit
+       5  {
+       9 -    #region MyRegion                                           
+      10 -                                                               
+      11 -    private const float ARRIVE_THRESHOLD = 0.15f;              
+       6      private const int MONEY_COUNT = 2;
+       7  
+      14 -    #endregion                                                 
+      15 -                                                               
+       8      public int needHandcuff = 4;
+       9  
+      10      [Header("UI")] [SerializeField] private GameObject canvas;
+      11      [SerializeField] private Text countTxt;
+      12      [SerializeField] private Image countGauge;
+      13  
+      22 -    private CancellationTokenSource _moveCts;                  
+      14      private int curHandcuff = 0;
+      15  
+      16      private bool isReady = false;
+     ...
+      22          canvas.SetActive(false);
+      23      }
+      24  
+      34 -    public void MoveTo(Vector3 targetPos, Action onArrived = nu
+         -ll)                                                            
+      35 -    {                                                          
+      36 -        // 기존 이동 취소 후 새 이동 시작                      
+      37 -        _moveCts?.Cancel();                                    
+      38 -        _moveCts?.Dispose();                                   
+      39 -        _moveCts = new CancellationTokenSource();              
+      40 -                                                               
+      41 -        MoveAsync(new Vector3(targetPos.x, transform.position.y
+         -, targetPos.z), onArrived, _moveCts.Token).Forget();           
+      42 -    }                                                          
+      43 -                                                               
+      44 -    private async UniTaskVoid MoveAsync(Vector3 targetPos, Acti
+         -on onArrived, CancellationToken ct)                            
+      45 -    {                                                          
+      46 -        PlayAnimation(Define.ANIMATION_RUN);                   
+      47 -                                                               
+      48 -        while (!ct.IsCancellationRequested)                    
+      49 -        {                                                      
+      50 -            var diff = targetPos - transform.position;         
+      51 -            diff.y = 0f;                                       
+      52 -                                                               
+      53 -            if (diff.magnitude <= ARRIVE_THRESHOLD)            
+      54 -            {                                                  
+      55 -                transform.position = targetPos;                
+      56 -                break;                                         
+      57 -            }                                                  
+      58 -                                                               
+      59 -            MoveDirection(diff);                               
+      60 -            await UniTask.Yield(PlayerLoopTiming.Update, ct);  
+      61 -        }                                                      
+      62 -                                                               
+      63 -        if (ct.IsCancellationRequested) return;                
+      64 -                                                               
+      65 -        PlayAnimation(Define.ANIMATION_IDLE);                  
+      66 -        onArrived?.Invoke();                                   
+      67 -    }                                                          
+      68 -                                                               
+      25      public void SetSpeechBubble(bool isOn)
+      26      {
+      27          if (isOn)
+     ...
+       50              return false;
+       51  
+       52          SetSpeechBubble(false);
+       97 -                                                              
+       53 +                                                              
+       54          for (var i = 0; i < MONEY_COUNT; i++)
+       55              MapManager.instance.Bank.AddMoney();
+      100 -                                                              
+       56 +                                                              
+       57          MoveTo(transform.position + Vector3.right * 10f, () =>
+            Release());
+       58  
+       59          return true;
+       60      }
+      105 -                                                              
+      106 -    private void OnDestroy()                                  
+      107 -    {                                                         
+      108 -        _moveCts?.Cancel();                                   
+      109 -        _moveCts?.Dispose();                                  
+      110 -    }                                                         
+      111 -}                                                             
+       61   No newline at end of file
+       62 +}                                                             
+  ⎿  Found 7 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● MoveTo 해결 에러는 Unit.cs 컴파일 전 발생하는 IDE 타이밍 문제일 수 있습니다.
+  Unit.cs를 확인해볼게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● Unit.cs는 정상입니다. MoveTo 에러는 IDE가 아직 Unit.cs 변경을 반영하기 전
+  발생한 타이밍 이슈입니다. Unity Editor에서 recompile하면 사라집니다.
+
+  ---
+  변경 요약:
+
+  Unit.cs — 공통 이동 로직 흡수:
+  - ARRIVE_THRESHOLD, _moveCts 필드 추가
+  - MoveTo(), MoveAsync() 이동 (베이스 클래스에서 MoveDirection 호출 → 다형성
+  보장)
+  - OnDestroy() 를 protected virtual로 추가 (서브클래스 확장 가능)
+
+  Prisoner.cs — Prisoner 전용 코드만 유지:
+  - MoveTo, MoveAsync, _moveCts, ARRIVE_THRESHOLD, OnDestroy 제거
+  - using System, using System.Threading, using Cysharp.Threading.Tasks
+  불필요하여 제거
+
+  MoveDirection이 virtual이라 Worker 등 다른 서브클래스에서 오버라이드해도
+  MoveAsync 내부에서 자동으로 다형적으로 호출됩니다.
+
+✻ Sautéed for 1m 14s
+
+❯ UnitManager.cs에 Worker를 3마리 생성하고 각각 초기 위치는 workerGenTrans의    
+  position에 들어가도록 함수를 만들어줘. 그리고 Worker는 z축으로 14f 이동했다가 
+   초기 위치로 돌아오는 행동을 반복하도록 함수를 만들어줘.                      
+
+● 관련 파일들을 먼저 읽어볼게요.
+
+  Searched for 1 pattern, read 2 files (ctrl+o to expand)
+
+● 패턴을 파악했습니다. Worker에 순찰 함수를, UnitManager에 생성 함수를
+  추가하겠습니다.
+
+  Read 2 files (ctrl+o to expand)
+
+● Write(D:/Supercent/Supercent/Assets/Scripts/Unit/Worker.cs)
+  ⎿  Added 19 lines, removed 3 lines
+       1 -using System.Collections;                                      
+       2 -using System.Collections.Generic;                              
+       1  using UnityEngine;
+       2  
+       3  public class Worker : Unit
+       4  {
+       7 -                                                               
+       5 +    private const float PATROL_DISTANCE = 14f;                 
+       6 +                                                               
+       7 +    private Vector3 _origin;                                   
+       8 +                                                               
+       9 +    public void StartPatrol(Vector3 origin)                    
+      10 +    {                                                          
+      11 +        _origin = origin;                                      
+      12 +        MoveToForward();                                       
+      13 +    }                                                          
+      14 +                                                               
+      15 +    private void MoveToForward()                               
+      16 +    {                                                          
+      17 +        MoveTo(_origin + Vector3.forward * PATROL_DISTANCE, Mov
+         +eToOrigin);                                                    
+      18 +    }                                                          
+      19 +                                                               
+      20 +    private void MoveToOrigin()                                
+      21 +    {                                                          
+      22 +        MoveTo(_origin, MoveToForward);                        
+      23 +    }                                                          
+      24  }
+
+● Write(D:/Supercent/Supercent/Assets/Scripts/Manager/UnitManager.cs)
+  ⎿  Added 16 lines, removed 7 lines
+       1 -using System;                                                  
+       2 -using System.Collections;                                      
+       3 -using System.Collections.Generic;                              
+       1  using UnityEngine;
+       2  
+       3  public class UnitManager : MonoBehaviour
+       4  {
+       5 +    private const int WORKER_COUNT = 3;                        
+       6 +                                                               
+       7      public static UnitManager instance;
+       8 +                                                               
+       9 +    public Transform[] workerGenTrans;                         
+      10 +                                                               
+      11      private void Awake()
+      12      {
+      13          if (instance == null)
+      14              instance = this;
+      15      }
+      16  
+      15 -    public Transform[] workerGenTrans;                         
+      16 -                                                               
+      17 -                                                               
+      18 -}                                                              
+      17   No newline at end of file
+      18 +    public void SpawnWorkers()                                 
+      19 +    {                                                          
+      20 +        for (var i = 0; i < WORKER_COUNT; i++)                 
+      21 +        {                                                      
+      22 +            var worker = ObjectPool.GetObject<Worker>(Define.Po
+         +oledEnum.Worker, null);                                        
+      23 +            var origin = workerGenTrans[i].position;           
+      24 +            worker.transform.position = origin;                
+      25 +            worker.StartPatrol(origin);                        
+      26 +        }                                                      
+      27 +    }                                                          
+      28 +}                                                              
+  ⎿  Found 3 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● 진단 경고들은 Rider 컨벤션 경고(네이밍, 네임스페이스)이며 컴파일/동작에는 영향
+   없습니다.
+
+  ---
+  변경 요약:
+
+  Worker.cs
+  - StartPatrol(Vector3 origin) — 순찰 시작, 초기 위치 저장
+  - MoveToForward() / MoveToOrigin() — Unit.MoveTo의 onArrived 콜백으로 서로를
+  호출해 무한 왕복
+  - MoveDirection은 Unit에서 virtual이므로 다형성 유지
+
+  UnitManager.cs
+  - SpawnWorkers() — workerGenTrans 3개 위치에 Worker를 풀에서 꺼내 배치 후
+  StartPatrol 호출
+  - 적절한 시점(게임 시작 등)에 UnitManager.instance.SpawnWorkers() 호출하면
+  됩니다
+
+✻ Baked for 38s
+
+❯ 앞으로 변수를 상수화 할때는 const 대신 readonly를 사용해줘. 그리도 Define     
+  class에다가 변수 type 별로 Region에 구분해서 작성해줘                         
+
+  Read 1 file (ctrl+o to expand)
+
+● Define.cs가 이미 readonly로 잘 정리되어 있네요. Unit.cs, Worker.cs,
+  Prisoner.cs의 상수들을 Define으로 이동하고, const를 readonly로 바꾸겠습니다.
+  피드백도 저장해둘게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● 이제 모두 수정하겠습니다.
+● Update(D:/Supercent/Supercent/Assets/Scripts/Define.cs)
+  ⎿  Added 2 lines
+      27  
+      28      public static readonly float PROPSETTING_TIME = 0.05f;
+      29      public static readonly float STACK_GAP = 0.15f;
+      30 +    public static readonly float ARRIVE_THRESHOLD = 0.15f;     
+      31 +    public static readonly float WORKER_PATROL_DISTANCE = 14f; 
+      32  
+      33      #endregion
+      34      
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Define.cs)
+  ⎿  Added 1 line
+      20  
+      21      public static readonly int MONEY_COST = 10;
+      22      public static readonly int WORKER_COUNT = 3;
+      23 +    public static readonly int PRISONER_MONEY_COUNT = 2;       
+      24  
+      25      #endregion
+      26  
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Unit.cs)
+  ⎿  Removed 2 lines
+       5  
+       6  public class Unit : PooledObject
+       7  {
+       8 -    private const float ARRIVE_THRESHOLD = 0.15f;              
+       9 -                                                               
+       8      [SerializeField] protected float moveSpeed = 5f;
+       9      protected Vector3 dir;
+      10      protected Animator animator;
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Unit.cs)
+  ⎿  Added 1 line, removed 1 line
+      35              var diff = targetPos - transform.position;
+      36              diff.y = 0f;
+      37  
+      38 -            if (diff.magnitude <= ARRIVE_THRESHOLD)            
+      38 +            if (diff.magnitude <= Define.ARRIVE_THRESHOLD)     
+      39              {
+      40                  transform.position = targetPos;
+      41                  break;
+  ⎿  Found 13 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Worker.cs)
+  ⎿  Removed 2 lines
+      2  
+      3  public class Worker : Unit
+      4  {
+      5 -    private const float PATROL_DISTANCE = 14f;                  
+      6 -                                                                
+      5      private Vector3 _origin;
+      6  
+      7      public void StartPatrol(Vector3 origin)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Worker.cs)
+  ⎿  Added 1 line, removed 1 line
+      12  
+      13      private void MoveToForward()
+      14      {
+      15 -        MoveTo(_origin + Vector3.forward * PATROL_DISTANCE, Mov
+         -eToOrigin);                                                    
+      15 +        MoveTo(_origin + Vector3.forward * Define.WORKER_PATROL
+         +_DISTANCE, MoveToOrigin);                                      
+      16      }
+      17  
+      18      private void MoveToOrigin()
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Prisoner.cs)
+  ⎿  Removed 2 lines
+       3  
+       4  public class Prisoner : Unit
+       5  {
+       6 -    private const int MONEY_COUNT = 2;                         
+       7 -                                                               
+       6      public int needHandcuff = 4;
+       7  
+       8      [Header("UI")] [SerializeField] private GameObject canvas;
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Prisoner.cs)
+  ⎿  Added 1 line, removed 1 line
+      49  
+      50          SetSpeechBubble(false);
+      51  
+      52 -        for (var i = 0; i < MONEY_COUNT; i++)                  
+      52 +        for (var i = 0; i < Define.PRISONER_MONEY_COUNT; i++)  
+      53              MapManager.instance.Bank.AddMoney();
+      54  
+      55          MoveTo(transform.position + Vector3.right * 10f, () => 
+          Release());
+
+● 피드백 메모리도 저장해둘게요.
+
+  Read 1 file, wrote 2 memories (ctrl+o to expand)
+
+● 변경 요약:
+
+  Define.cs — 상수 추가 (FLOAT / INTEGER region):
+  - ARRIVE_THRESHOLD = 0.15f
+  - WORKER_PATROL_DISTANCE = 14f
+  - PRISONER_MONEY_COUNT = 2
+
+  Unit.cs — const ARRIVE_THRESHOLD 제거 → Define.ARRIVE_THRESHOLD 참조
+
+  Worker.cs — const PATROL_DISTANCE 제거 → Define.WORKER_PATROL_DISTANCE 참조
+
+  Prisoner.cs — const MONEY_COUNT 제거 → Define.PRISONER_MONEY_COUNT 참조
+
+  앞으로 상수 선언 시 const 대신 static readonly를 사용하고 Define에 타입별
+  Region으로 관리하겠습니다.
+
+✻ Sautéed for 1m 31s
+
+❯ Worker.cs에 일꾼이 OnTriggerEnter함수를 통해 앞에 Rock 존재하는지 확인하고,   
+  Patrol 도중에 Rock가 존재한다면 ANIMATION_IDLE과 AnimaANIMATION_PICKING을     
+  실행 시키고 그게 아니라면 그대로 순찰을 돌수 있도록 기능을 만들어줘           
+  ⎿  ⧉ Selected 1 lines from ..\..\..\mnt\d\Supercent\Supercent\Assets\Scripts\Define.cs in JetBrains Rider
+  ⎿  Found 12 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Rock 클래스 구조를 먼저 확인할게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● Worker가 Rock을 감지하면 순찰을 중단하고 애니메이션을 실행하도록
+  구현하겠습니다. Unit에 StopMove() 메서드도 추가해야 합니다.
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Unit.cs)
+  ⎿  Added 7 lines
+      58          transform.position += dir.normalized * moveSpeed * Time
+          .deltaTime;
+      59      }
+      60  
+      61 +    protected void StopMove()                                  
+      62 +    {                                                          
+      63 +        moveCts?.Cancel();                                     
+      64 +        moveCts?.Dispose();                                    
+      65 +        moveCts = null;                                        
+      66 +    }                                                          
+      67 +                                                               
+      68      public void PlayAnimation(string animationName) => animator
+          .SetTrigger(animationName);
+      69      protected virtual Vector3 SetDirection(Vector3 direction) =
+          > direction;
+      70  
+
+● Write(D:/Supercent/Supercent/Assets/Scripts/Unit/Worker.cs)
+  ⎿  Added 27 lines
+       1 +using Cysharp.Threading.Tasks;                                 
+       2  using UnityEngine;
+       3  
+       4  public class Worker : Unit
+       5  {
+       6      private Vector3 origin;
+       7      private BoxCollider frontCheckCollider;
+       8 +    private bool isPatrolling;                                 
+       9  
+      10      protected override void Awake()
+      11      {
+     ...
+      16      public void StartPatrol(Vector3 origin)
+      17      {
+      18          this.origin = origin;
+      19 +        isPatrolling = true;                                   
+      20          MoveToForward();
+      21      }
+      22  
+      23      private void MoveToForward()
+      24      {
+      25 +        if (!isPatrolling) return;                             
+      26          MoveTo(origin + Vector3.forward * Define.WORKER_PATROL_
+          DISTANCE, MoveToOrigin);
+      27      }
+      28  
+      29      private void MoveToOrigin()
+      30      {
+      31 +        if (!isPatrolling) return;                             
+      32          MoveTo(origin, MoveToForward);
+      33      }
+      34 +                                                               
+      35 +    private void OnTriggerEnter(Collider other)                
+      36 +    {                                                          
+      37 +        if (!other.TryGetComponent<Rock>(out _)) return;       
+      38 +        isPatrolling = false;                                  
+      39 +        StopMove();                                            
+      40 +        PlayRockAnimation().Forget();                          
+      41 +    }                                                          
+      42 +                                                               
+      43 +    private void OnTriggerExit(Collider other)                 
+      44 +    {                                                          
+      45 +        if (!other.TryGetComponent<Rock>(out _)) return;       
+      46 +        isPatrolling = true;                                   
+      47 +        MoveToForward();                                       
+      48 +    }                                                          
+      49 +                                                               
+      50 +    private async UniTaskVoid PlayRockAnimation()              
+      51 +    {                                                          
+      52 +        PlayAnimation(Define.ANIMATION_IDLE);                  
+      53 +        await UniTask.Yield();                                 
+      54 +        PlayAnimation(Define.ANIMATION_PICKING);               
+      55 +    }                                                          
+      56  }
+
+● 변경 요약:
+
+  Unit.cs — StopMove() 추가 (protected):
+  - moveCts를 취소·해제하여 MoveAsync의 콜백 체인을 즉시 끊음
+
+  Worker.cs:
+  - isPatrolling 플래그로 순찰 상태 관리 — MoveToForward / MoveToOrigin 진입 시
+  체크
+  - OnTriggerEnter(Rock) → isPatrolling = false, StopMove(), IDLE → PICKING
+  순서로 실행
+  - OnTriggerExit(Rock) → isPatrolling = true, MoveToForward() 로 순찰 재개
+  - PlayRockAnimation() — UniTask.Yield() 로 한 프레임 간격을 두어 IDLE 트리거
+  후 PICKING 트리거 발동
+
+✻ Worked for 1m 16s
+
+❯ Worker 의 앞에 Rock이 없으면 다시 움직이도록 해줘                             
+
+  Read 1 file (ctrl+o to expand)
+● OnTriggerExit는 Rock이 풀로 반환(비활성화)될 때 발동하지 않는 경우가 있습니다.
+   OnPickingEvent에서 Rock이 제거된 직후 순찰을 재개하는 방식으로 수정할게요.
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Worker.cs)
+  ⎿  Added 3 lines, removed 3 lines
+      41  
+      42      private void OnTriggerEnter(Collider other)
+      43      {
+      44 -        if (!other.TryGetComponent<Rock>(out _)) return;       
+      44 +        if (!other.TryGetComponent<Rock>(out var rock)) return;
+      45 +        if (!isPatrolling) return;                             
+      46          isPatrolling = false;
+      47          StopMove();
+      48          PlayRockAnimation().Forget();
+     ...
+      51      private void OnTriggerExit(Collider other)
+      52      {
+      53          if (!other.TryGetComponent<Rock>(out _)) return;
+      53 -        isPatrolling = true;                                   
+      54 -        MoveToForward();                                       
+      54 +        ResumePatrol();                                        
+      55      }
+      56  
+      57      private async UniTaskVoid PlayRockAnimation()
+  ⎿  Found 2 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Worker.cs)
+  ⎿  Added 1 line, removed 1 line
+      41  
+      42      private void OnTriggerEnter(Collider other)
+      43      {
+      44 -        if (!other.TryGetComponent<Rock>(out var rock)) return;
+      44 +        if (!other.TryGetComponent<Rock>(out _)) return;       
+      45          if (!isPatrolling) return;
+      46          isPatrolling = false;
+      47          StopMove();
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Worker.cs)
+  ⎿  Added 8 lines
+      65      {
+      66          base.OnPickingEvent();
+      67          rockDestroyController.RockDestroy();
+      68 +        ResumePatrol();                                        
+      69      }
+      70  
+      71 +    private void ResumePatrol()                                
+      72 +    {                                                          
+      73 +        if (isPatrolling) return;                              
+      74 +        isPatrolling = true;                                   
+      75 +        MoveToForward();                                       
+      76 +    }                                                          
+      77 +                                                               
+      78      public override void SetProp(Define.PooledEnum prop)
+      79      {
+      80          base.SetProp(prop);
+
+● 변경 내용:
+
+  - ResumePatrol() 메서드 추출 — isPatrolling 중복 진입 방지 후 MoveToForward()
+  호출
+  - OnPickingEvent() 에서 RockDestroy() 직후 ResumePatrol() 호출 — Rock이 풀로
+  반환(비활성화)될 때 OnTriggerExit가 발동하지 않는 경우를 커버
+  - OnTriggerExit 는 그대로 유지 — Rock이 물리적으로 벗어나는 경우의 보조 처리
+  - OnTriggerEnter 에 isPatrolling 체크 추가 — 이미 멈춰있을 때 중복 중단 방지
+
+✻ Sautéed for 45s
+
+❯ Worker의 앞에 Rock가 존재하는지 확인은 OnTriggerEnter를 통해서 해줘. 그리고   
+  최초 등장 시점부터 Z축으로 14f만큼 순찰하는데, Rock이 존재하면 Idle           
+  애니메이션과, Picking 애니메이션을 재생시켜. 그리고 Rock가 파괴 된 후 Rock가  
+  존재하는지 다시 확인하고 없으면 순찰을 계속 진행해줘                          
+
+● Rock 감지 후 파괴 시 재확인 로직을 HashSet으로 트리거 내 Rock을 추적하도록
+  구현하겠습니다.
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(D:/Supercent/Supercent/Assets/Scripts/Unit/Worker.cs)
+  ⎿  Added 24 lines, removed 10 lines
+      1 +using System.Collections.Generic;                               
+      2  using Cysharp.Threading.Tasks;
+      3  using UnityEngine;
+      4  
+     ...
+       8      private Vector3 origin;
+       9      private bool isPatrolling;
+      10  
+      11 +    private readonly HashSet<Rock> rocksInTrigger = new();     
+      12 +                                                               
+      13      protected override void Awake()
+      14      {
+      15          base.Awake();
+     ...
+      44  
+      45      private void OnTriggerEnter(Collider other)
+      46      {
+      44 -        if (!other.TryGetComponent<Rock>(out _)) return;       
+      47 +        if (!other.TryGetComponent<Rock>(out var rock)) return;
+      48 +                                                               
+      49 +        rocksInTrigger.Add(rock);                              
+      50 +                                                               
+      51          if (!isPatrolling) return;
+      52 +                                                               
+      53          isPatrolling = false;
+      54          StopMove();
+      55          PlayRockAnimation().Forget();
+     ...
+      57  
+      58      private void OnTriggerExit(Collider other)
+      59      {
+      53 -        if (!other.TryGetComponent<Rock>(out _)) return;       
+      54 -        ResumePatrol();                                        
+      60 +        if (!other.TryGetComponent<Rock>(out var rock)) return;
+      61 +        rocksInTrigger.Remove(rock);                           
+      62      }
+      63  
+      64      private async UniTaskVoid PlayRockAnimation()
+     ...
+      72      {
+      73          base.OnPickingEvent();
+      74          rockDestroyController.RockDestroy();
+      68 -        ResumePatrol();                                        
+      75 +        CheckRockAndResume();                                  
+      76      }
+      77  
+      71 -    private void ResumePatrol()                                
+      78 +    private void CheckRockAndResume()                          
+      79      {
+      73 -        if (isPatrolling) return;                              
+      74 -        isPatrolling = true;                                   
+      75 -        MoveToForward();                                       
+      80 +        rocksInTrigger.RemoveWhere(r => r == null || !r.gameObj
+         +ect.activeInHierarchy);                                        
+      81 +                                                               
+      82 +        if (rocksInTrigger.Count == 0)                         
+      83 +        {                                                      
+      84 +            isPatrolling = true;                               
+      85 +            MoveToForward();                                   
+      86 +        }                                                      
+      87 +        else                                                   
+      88 +        {                                                      
+      89 +            PlayRockAnimation().Forget();                      
+      90 +        }                                                      
+      91      }
+      92  
+      93      public override void SetProp(Define.PooledEnum prop)
+      94      {
+      95          base.SetProp(prop);
+      81 -                                                               
+      96          MapManager.instance.Machine.Zone.OnStayCallback(null);
+      97      }
+      84 -}                                                              
+      98   No newline at end of file
+      99 +}                                                              
+  ⎿  Found 6 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● 경고는 Rider 네이밍 컨벤션 경고이며 동작에 영향 없습니다.
+
+  변경 요약:
+
+  - HashSet<Rock> rocksInTrigger — 트리거 내 Rock을 추적
+  - OnTriggerEnter — Rock 감지 시 Set에 추가, 순찰 중일 때만 정지 + 애니메이션
+  실행 (중복 진입 방지)
+  - OnTriggerExit — 물리적으로 벗어난 Rock은 Set에서 제거
+  - CheckRockAndResume() — Rock 파괴 후 호출, 비활성화된(풀 반환된) Rock을
+  Set에서 제거 후 판단:
+    - Rock 없음 → 순찰 재개
+    - Rock 남아있음 → 다음 Rock에 대해 PlayRockAnimation() 재실행
+
+✻ Crunched for 51s
+
+❯ CheckRockAndResume 을 할때 돌이 없으면 무작정 MoveToForward()을 실행할게      
+  아니라 현재 순찰 방향에 따라 MoveToForward(), MoveToOrigin()이 결정되어야 해  
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Worker.cs)
+  ⎿  Added 1 line
+       7      private RockDestroyController rockDestroyController;
+       8      private Vector3 origin;
+       9      private bool isPatrolling;
+      10 +    private bool isHeadingForward;                             
+      11  
+      12      private readonly HashSet<Rock> rocksInTrigger = new();
+      13  
+  ⎿  Found 3 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Worker.cs)
+  ⎿  Added 2 lines
+      34      private void MoveToForward()
+      35      {
+      36          if (!isPatrolling) return;
+      37 +        isHeadingForward = true;                               
+      38          MoveTo(origin + Vector3.forward * Define.WORKER_PATROL_
+          DISTANCE, MoveToOrigin);
+      39      }
+      40  
+      41      private void MoveToOrigin()
+      42      {
+      43          if (!isPatrolling) return;
+      44 +        isHeadingForward = false;                              
+      45          MoveTo(origin, MoveToForward);
+      46      }
+      47  
+  ⎿  Found 1 new diagnostic issue in 1 file (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Worker.cs)
+  ⎿  Added 2 lines, removed 1 line
+      85          if (rocksInTrigger.Count == 0)
+      86          {
+      87              isPatrolling = true;
+      88 -            MoveToForward();                                   
+      88 +            if (isHeadingForward) MoveToForward();             
+      89 +            else MoveToOrigin();                               
+      90          }
+      91          else
+      92          {
+  ⎿  Found 1 new diagnostic issue in 1 file (ctrl+o to expand)
+
+● isHeadingForward 플래그를 추가해서 MoveToForward 진입 시 true, MoveToOrigin
+  진입 시 false로 기록하고, CheckRockAndResume에서 Rock이 없을 때 해당 플래그로
+  재개 방향을 결정합니다.
+
+❯ UnitManager.cs에서 MapManager.Desk.DeskZone에 Cop을 스폰할 함수를 만들어줘    
+
+● 관련 파일들을 먼저 확인할게요.
+
+  Searched for 1 pattern, read 2 files (ctrl+o to expand)
+
+● ZoneTrigger의 위치 구조도 확인할게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● DeskZone은 Transform이므로 transform.position을 스폰 위치로 사용하면 됩니다.
+  Read 1 file (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Manager/UnitManager.cs)
+  ⎿  Added 7 lines
+      12              instance = this;
+      13      }
+      14  
+      15 +    public void SpawnCop()                                     
+      16 +    {                                                          
+      17 +        var deskZone = MapManager.instance.Desk.DeskZone;      
+      18 +        var cop = ObjectPool.GetObject<Cop>(Define.PooledEnum.C
+         +op, transform);                                                
+      19 +        cop.transform.position = deskZone.transform.position;  
+      20 +    }                                                          
+      21 +                                                               
+      22      public void SpawnWorkers()
+      23      {
+      24          for (var i = 0; i < Define.WORKER_COUNT; i++)
+
+● SpawnCop()을 추가했습니다. MapManager.instance.Desk.DeskZone의 position에
+  Cop을 스폰합니다. 필요 시 Cop에 초기화 로직(순찰, 행동 등)이 생기면
+  cop.Init(...) 이후에 이어서 호출하면 됩니다.
+
+❯ TrayTrigger.cs 함수를 다른 코드 참고해서 OnTriggerStay를 사용해서             
+  리팩토링해줘                                                                  
+
+  Read 2 files (ctrl+o to expand)
+
+● BankTrigger와 ZoneTrigger 패턴을 참고해서 OnTriggerStay + isProcessing
+  플래그로 리팩토링하겠습니다.
+
+● Write(D:/Supercent/Supercent/Assets/Scripts/Controller/TrayTrigger.cs)
+  ⎿  Added 15 lines, removed 27 lines
+       1  using System;
+       2 -using System.Collections;                                      
+       3 -using System.Collections.Generic;                              
+       4 -using System.Threading;                                        
+       5 -using Cysharp.Threading.Tasks;                                 
+       2  using UnityEngine;
+       3  
+       4  public class TrayTrigger : MonoBehaviour
+       5  {
+       6      [SerializeField] private MachineController machine;
+       7  
+      12 -    private CancellationTokenSource cts;                       
+       8 +    private bool isProcessing;                                 
+       9  
+      14 -    private void OnTriggerEnter(Collider other)                
+      10 +    private void OnTriggerStay(Collider other)                 
+      11      {
+      16 -        cts = new CancellationTokenSource();                   
+      17 -        if (other.TryGetComponent(out Unit unit))              
+      18 -        {                                                      
+      19 -            SetProp(unit).Forget();                            
+      20 -        }                                                      
+      21 -    }                                                          
+      12 +        if (isProcessing) return;                              
+      13 +        if (machine.HandCuffStk.Count == 0) return;            
+      14  
+      23 -    private void OnTriggerExit(Collider other)                 
+      24 -    {                                                          
+      15          if (other.TryGetComponent(out Unit unit))
+      26 -        {                                                      
+      27 -            cts.Cancel();                                      
+      28 -        }                                                      
+      16 +            SetPropAsync(unit).Forget();                       
+      17      }
+      18  
+      31 -    private async UniTaskVoid SetProp(Unit Unit)               
+      19 +    private async Cysharp.Threading.Tasks.UniTaskVoid SetPropAs
+         +ync(Unit unit)                                                 
+      20      {
+      33 -        await UniTask.WaitUntil(() => machine.HandCuffStk.Count
+         - > 0, cancellationToken: cts.Token);                           
+      34 -        while (true)                                           
+      35 -        {                                                      
+      36 -            await UniTask.WaitUntil(() => machine.HandCuffStk.C
+         -ount > 0, cancellationToken: cts.Token);                       
+      21 +        isProcessing = true;                                   
+      22  
+      38 -            var handCuff = machine.HandCuffStk.Pop() as Prop_Ha
+         -ndcuff;                                                        
+      39 -            handCuff.Release();                                
+      40 -            Unit.SetProp(Define.PooledEnum.Prop_Handcuff);     
+      41 -            await UniTask.Delay(TimeSpan.FromSeconds(Define.PRO
+         -PSETTING_TIME), cancellationToken: cts.Token);                 
+      23 +        while (machine.HandCuffStk.TryPop(out var prop))       
+      24 +        {                                                      
+      25 +            prop.Release();                                    
+      26 +            unit.SetProp(Define.PooledEnum.Prop_Handcuff);     
+      27 +            await Cysharp.Threading.Tasks.UniTask.Delay(TimeSpa
+         +n.FromSeconds(Define.PROPSETTING_TIME));                       
+      28          }
+      29 +                                                               
+      30 +        isProcessing = false;                                  
+      31      }
+      44 -}                                                              
+      32   No newline at end of file
+      33 +}                                                              
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Stack<Prop>이라 TryPop이 없을 수 있습니다. using 정리도 겸해서 수정할게요.
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Controller/TrayTrigger.cs)
+  ⎿  Added 2 lines, removed 2 lines
+      20      {
+      21          isProcessing = true;
+      22  
+      23 -        while (machine.HandCuffStk.TryPop(out var prop))       
+      23 +        while (machine.HandCuffStk.Count > 0)                  
+      24          {
+      25 -            prop.Release();                                    
+      25 +            machine.HandCuffStk.Pop().Release();               
+      26              unit.SetProp(Define.PooledEnum.Prop_Handcuff);
+      27              await Cysharp.Threading.Tasks.UniTask.Delay(TimeSpa
+          n.FromSeconds(Define.PROPSETTING_TIME));
+      28          }
+
+● 변경 요약:
+
+  ┌───────────────────────────────────────┬─────────────────────────────────┐
+  │                 이전                  │              이후               │
+  ├───────────────────────────────────────┼─────────────────────────────────┤
+  │ OnTriggerEnter + OnTriggerExit +      │ OnTriggerStay + isProcessing    │
+  │ CancellationTokenSource               │ 플래그                          │
+  ├───────────────────────────────────────┼─────────────────────────────────┤
+  │ Unit 진입 시 루프 시작, 퇴장 시       │ Stay 매 프레임 체크, 처리       │
+  │ Cancel                                │ 중이거나 스택 비어있으면 skip   │
+  ├───────────────────────────────────────┼─────────────────────────────────┤
+  │ WaitUntil 이중 대기                   │ 스택 있을 때만 진입 — 단순      │
+  │                                       │ while 루프                      │
+  └───────────────────────────────────────┴─────────────────────────────────┘
+
+  BankTrigger와 동일한 패턴으로, CancellationTokenSource 없이 isProcessing으로
+  중복 실행을 막고 OnTriggerStay가 자연스럽게 종료 조건을 처리합니다.
+
+✻ Baked for 51s
+
+❯ ZoneTrigger.cs 참고해서 TrayTrigger.cs를 리팩토링해줘                         
+  ⎿  Found 8 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● ZoneTrigger의 deltaTime 쓰로틀 패턴을 적용해서 CTS/async를 제거하겠습니다.
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(D:/Supercent/Supercent/Assets/Scripts/Controller/TrayTrigger.cs)
+  ⎿  Added 12 lines, removed 28 lines
+       1 -using System;                                                  
+       2 -using System.Collections;                                      
+       3 -using System.Collections.Generic;                              
+       4 -using System.Threading;                                        
+       5 -using Cysharp.Threading.Tasks;                                 
+       1  using UnityEngine;
+       2  
+       3  public class TrayTrigger : MonoBehaviour
+       4  {
+       5      [SerializeField] private MachineController machine;
+       6  
+      12 -    private CancellationTokenSource cts;                       
+       7 +    private float deltaTime;                                   
+       8  
+      14 -    private void OnTriggerEnter(Collider other)                
+       9 +    private void OnTriggerStay(Collider other)                 
+      10      {
+      16 -        cts = new CancellationTokenSource();                   
+      11 +        deltaTime += Time.deltaTime;                           
+      12 +        if (deltaTime < Define.PROPSETTING_TIME) return;       
+      13 +        if (machine.HandCuffStk.Count == 0) return;            
+      14 +                                                               
+      15          if (other.TryGetComponent(out Unit unit))
+      16          {
+      19 -            SetProp(unit).Forget();                            
+      17 +            machine.HandCuffStk.Pop().Release();               
+      18 +            unit.SetProp(Define.PooledEnum.Prop_Handcuff);     
+      19 +            deltaTime = 0f;                                    
+      20          }
+      21      }
+      22  
+      23      private void OnTriggerExit(Collider other)
+      24      {
+      25 -        if (other.TryGetComponent(out Unit unit))              
+      26 -        {                                                      
+      27 -            cts.Cancel();                                      
+      28 -        }                                                      
+      25 +        if (other.TryGetComponent(out Unit _))                 
+      26 +            deltaTime = 0f;                                    
+      27      }
+      30 -                                                               
+      31 -    private async UniTaskVoid SetProp(Unit Unit)               
+      32 -    {                                                          
+      33 -        await UniTask.WaitUntil(() => machine.HandCuffStk.Count
+         - > 0, cancellationToken: cts.Token);                           
+      34 -        while (true)                                           
+      35 -        {                                                      
+      36 -            await UniTask.WaitUntil(() => machine.HandCuffStk.C
+         -ount > 0, cancellationToken: cts.Token);                       
+      37 -                                                               
+      38 -            var handCuff = machine.HandCuffStk.Pop() as Prop_Ha
+         -ndcuff;                                                        
+      39 -            handCuff.Release();                                
+      40 -            Unit.SetProp(Define.PooledEnum.Prop_Handcuff);     
+      41 -            await UniTask.Delay(TimeSpan.FromSeconds(Define.PRO
+         -PSETTING_TIME), cancellationToken: cts.Token);                 
+      42 -        }                                                      
+      43 -    }                                                          
+      44 -}                                                              
+      28   No newline at end of file
+      29 +}                                                              
+  ⎿  Found 2 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● 경고는 Rider 네이밍 컨벤션이며 동작에 영향 없습니다.
+
+  변경 요약:
+
+  ┌──────────────────────────────────────┬──────────────────────────────────┐
+  │                 이전                 │               이후               │
+  ├──────────────────────────────────────┼──────────────────────────────────┤
+  │ CancellationTokenSource + async      │ 없음                             │
+  │ UniTaskVoid                          │                                  │
+  ├──────────────────────────────────────┼──────────────────────────────────┤
+  │ OnTriggerEnter + OnTriggerExit +     │ OnTriggerStay + deltaTime 쓰로틀 │
+  │ WaitUntil 루프                       │                                  │
+  ├──────────────────────────────────────┼──────────────────────────────────┤
+  │ 핸드커프 소진까지 비동기 루프        │ PROPSETTING_TIME마다 1개씩 전달, │
+  │                                      │  자동 반복                       │
+  ├──────────────────────────────────────┼──────────────────────────────────┤
+  │ Unit 나가면 수동 Cancel              │ OnTriggerExit에서 deltaTime 리셋 │
+  └──────────────────────────────────────┴──────────────────────────────────┘
+
+  ZoneTrigger와 동일하게 deltaTime을 PROPSETTING_TIME과 비교해 쓰로틀하고,
+  스택이 비어있으면 skip하는 구조입니다.
+
+✻ Sautéed for 37s
+
+❯ Cop.cs에서 MachineController.Tray 와 생성된 위치를 Patrol하는 함수를          
+  만들어줘. 조건은 Cop이 PropStack 중 Prop_Handcuff의 스택 갯수가 10개 이상이면 
+   생성된 위치로 돌아오도록 하고, 만약에 10개 미만인 경우엔 3초간 10개가 되도록 
+   기다리고 해당 시간동안 10개를 못 채우면 다시 생성된 위치로 돌아오도록        
+  할거야.                                                                       
+
+● 관련 파일들을 확인할게요.
+
+  Read 2 files (ctrl+o to expand)
+
+● 구조를 파악했습니다. Define에 상수를 추가하고, Cop에 UniTask 기반 순찰 로직을
+  구현하겠습니다.
+
+  Read 2 files (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Define.cs)
+  ⎿  Added 1 line
+      21      public static readonly int MONEY_COST = 10;
+      22      public static readonly int WORKER_COUNT = 3;
+      23      public static readonly int PRISONER_MONEY_COUNT = 2;
+      24 +    public static readonly int COP_HANDCUFF_THRESHOLD = 10;    
+      25  
+      26      #endregion
+      27  
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Define.cs)
+  ⎿  Added 1 line
+      31      public static readonly float STACK_GAP = 0.15f;
+      32      public static readonly float ARRIVE_THRESHOLD = 0.15f;
+      33      public static readonly float WORKER_PATROL_DISTANCE = 14f;
+      34 +    public static readonly float COP_HANDCUFF_WAIT_TIME = 3f;  
+      35  
+      36      #endregion
+      37      
+
+● Write(D:/Supercent/Supercent/Assets/Scripts/Unit/Cop.cs)
+  ⎿  Added 52 lines, removed 3 lines
+       1 -using System.Collections;                                      
+       2 -using System.Collections.Generic;                              
+       1 +using System;                                                  
+       2 +using System.Threading;                                        
+       3 +using Cysharp.Threading.Tasks;                                 
+       4  using UnityEngine;
+       5  
+       6  public class Cop : Unit
+       7  {
+       7 -                                                               
+       8 +    private Vector3 spawnPos;                                  
+       9 +    private CancellationTokenSource patrolCts;                 
+      10 +                                                               
+      11 +    public void StartPatrol(Vector3 spawnPos)                  
+      12 +    {                                                          
+      13 +        this.spawnPos = spawnPos;                              
+      14 +                                                               
+      15 +        patrolCts?.Cancel();                                   
+      16 +        patrolCts?.Dispose();                                  
+      17 +        patrolCts = new CancellationTokenSource();             
+      18 +                                                               
+      19 +        PatrolAsync(patrolCts.Token).Forget();                 
+      20 +    }                                                          
+      21 +                                                               
+      22 +    private async UniTaskVoid PatrolAsync(CancellationToken ct)
+      23 +    {                                                          
+      24 +        var machine = MapManager.instance.Machine;             
+      25 +        var trayPos = machine.Tray.transform.position;         
+      26 +                                                               
+      27 +        while (!ct.IsCancellationRequested)                    
+      28 +        {                                                      
+      29 +            await MoveToTask(trayPos, ct);                     
+      30 +                                                               
+      31 +            if (machine.HandCuffStk.Count < Define.COP_HANDCUFF
+         +_THRESHOLD)                                                    
+      32 +            {                                                  
+      33 +                await UniTask.WhenAny(                         
+      34 +                    UniTask.WaitUntil(() => machine.HandCuffStk
+         +.Count >= Define.COP_HANDCUFF_THRESHOLD, cancellationToken: ct)
+         +,                                                              
+      35 +                    UniTask.Delay(TimeSpan.FromSeconds(Define.C
+         +OP_HANDCUFF_WAIT_TIME), cancellationToken: ct)                 
+      36 +                );                                             
+      37 +            }                                                  
+      38 +                                                               
+      39 +            await MoveToTask(spawnPos, ct);                    
+      40 +        }                                                      
+      41 +    }                                                          
+      42 +                                                               
+      43 +    private UniTask MoveToTask(Vector3 targetPos, CancellationT
+         +oken ct)                                                       
+      44 +    {                                                          
+      45 +        var tcs = new UniTaskCompletionSource();               
+      46 +        ct.Register(() => tcs.TrySetCanceled());               
+      47 +        MoveTo(targetPos, () => tcs.TrySetResult());           
+      48 +        return tcs.Task;                                       
+      49 +    }                                                          
+      50 +                                                               
+      51 +    protected override void OnDestroy()                        
+      52 +    {                                                          
+      53 +        base.OnDestroy();                                      
+      54 +        patrolCts?.Cancel();                                   
+      55 +        patrolCts?.Dispose();                                  
+      56 +    }                                                          
+      57  }  ⎿  Found 4 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● UnitManager도 spawn 위치를 전달하도록 수정할게요.
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Manager/UnitManager.cs)
+  ⎿  Added 3 lines, removed 1 line
+      15      public void SpawnCop()
+      16      {
+      17          var deskZone = MapManager.instance.Desk.DeskZone;
+      18 +        var spawnPos = deskZone.transform.position;            
+      19          var cop = ObjectPool.GetObject<Cop>(Define.PooledEnum.C
+          op, transform);
+      19 -        cop.transform.position = deskZone.transform.position;  
+      20 +        cop.transform.position = spawnPos;                     
+      21 +        cop.StartPatrol(spawnPos);                             
+      22      }
+      23  
+      24      public void SpawnWorkers()
+
+● 변경 요약:
+
+  Define.cs
+  - COP_HANDCUFF_THRESHOLD = 10 (INTEGER)
+  - COP_HANDCUFF_WAIT_TIME = 3f (FLOAT)
+
+  Cop.cs
+  - StartPatrol(spawnPos) — patrolCts 초기화 후 PatrolAsync 시작
+  - PatrolAsync 루프:
+    a. Tray 위치로 이동
+    b. 핸드커프 10개 미만이면 WhenAny(WaitUntil(>=10), Delay(3s)) — 먼저
+  충족되는 조건 대기
+    c. spawn 위치로 귀환 → 반복
+  - MoveToTask — MoveTo의 콜백을 UniTaskCompletionSource로 감싸 await 가능하게
+  변환
+  - OnDestroy — patrolCts 정리
+
+  UnitManager.cs
+  - SpawnCop()에서 spawn 위치를 cop.StartPatrol(spawnPos)로 전달
+
+✻ Worked for 1m 49s
+
+❯ cop이 spawnPos에는 기본적으로 3초 머무르도록 수정해주고, spawnPos에 있는      
+  동안에는 Desk를 보고 있도록 수정해줘                                          
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Cop.cs)
+  ⎿  Added 12 lines
+      23      {
+      24          var machine = MapManager.instance.Machine;
+      25          var trayPos = machine.Tray.transform.position;
+      26 +        var deskPos = MapManager.instance.Desk.transform.positi
+         +on;                                                            
+      27  
+      28          while (!ct.IsCancellationRequested)
+      29          {
+      30 +            LookAt(deskPos);                                   
+      31 +            await UniTask.Delay(TimeSpan.FromSeconds(Define.COP
+         +_SPAWN_WAIT_TIME), cancellationToken: ct);                     
+      32 +                                                               
+      33              await MoveToTask(trayPos, ct);
+      34  
+      35              if (machine.HandCuffStk.Count < Define.COP_HANDCUFF
+          _THRESHOLD)
+     ...
+      44          }
+      45      }
+      46  
+      47 +    private void LookAt(Vector3 targetPos)                     
+      48 +    {                                                          
+      49 +        var dir = targetPos - transform.position;              
+      50 +        dir.y = 0f;                                            
+      51 +        if (dir != Vector3.zero)                               
+      52 +            transform.rotation = Quaternion.LookRotation(dir); 
+      53 +    }                                                          
+      54 +                                                               
+      55      private UniTask MoveToTask(Vector3 targetPos, CancellationT
+          oken ct)
+      56      {
+      57          var tcs = new UniTaskCompletionSource();
+  ⎿  Found 2 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Define에 상수를 추가할게요.
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Define.cs)
+  ⎿  Added 1 line
+      32      public static readonly float ARRIVE_THRESHOLD = 0.15f;
+      33      public static readonly float WORKER_PATROL_DISTANCE = 14f;
+      34      public static readonly float COP_HANDCUFF_WAIT_TIME = 3f;
+      35 +    public static readonly float COP_SPAWN_WAIT_TIME = 3f;     
+      36  
+      37      #endregion
+      38      
+
+● dir 변수명 경고도 수정할게요.
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Cop.cs)
+  ⎿  Added 4 lines, removed 4 lines
+      46  
+      47      private void LookAt(Vector3 targetPos)
+      48      {
+      49 -        var dir = targetPos - transform.position;              
+      50 -        dir.y = 0f;                                            
+      51 -        if (dir != Vector3.zero)                               
+      52 -            transform.rotation = Quaternion.LookRotation(dir); 
+      49 +        var lookDir = targetPos - transform.position;          
+      50 +        lookDir.y = 0f;                                        
+      51 +        if (lookDir != Vector3.zero)                           
+      52 +            transform.rotation = Quaternion.LookRotation(lookDi
+         +r);                                                            
+      53      }
+      54  
+      55      private UniTask MoveToTask(Vector3 targetPos, CancellationT
+          oken ct)
+
+● 변경 요약:
+
+  - PatrolAsync 루프 시작 시 LookAt(deskPos) 호출 → Desk 방향으로 회전
+  - UniTask.Delay(COP_SPAWN_WAIT_TIME) — 3초 대기 후 Tray로 이동
+  - LookAt() — y축 제거 후 수평 방향만 LookRotation으로 적용
+  - Define.COP_SPAWN_WAIT_TIME = 3f 추가 (FLOAT region)
+
+  순찰 흐름: spawnPos에서 Desk 바라보며 3초 대기 → Tray 이동 → 핸드커프 
+  확인(최대 3초 대기) → spawnPos 귀환 → 반복
+
+✻ Cooked for 33s
+
+❯ Cop_Worker와 Player가 Cop를 상속받도록 수정해줘.                              
+
+● Player.cs를 먼저 읽어볼게요.
+
+● Bash(cat -n "D:/Supercent/Supercent/Assets/Scripts/Unit/Player.cs" && find
+      "D:/Supercent/Supercent/Assets/Scripts/Unit" -name "Cop_Worker.cs"
+      2>/dev/null | xargs cat…)
+  ⎿       1     using System;
+          2     using System.Collections.Generic;
+          3     using Cysharp.Threading.Tasks;
+     … +129 lines (ctrl+o to expand)
+
+● Unit.cs의 현재 상태를 확인할게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● 상속 구조가 이미 설정되어 있네요. Cop.cs의 불필요한 using을 정리하고, 상속
+  체계가 올바른지 확인해서 마무리할게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● 현재 상속 구조를 확인했습니다:
+  - Unit → Cop → Player ✓
+  - Unit → Cop → Cop_Worker ✓
+
+  Cop.cs의 불필요한 using들을 정리할게요.
+
+● Write(D:/Supercent/Supercent/Assets/Scripts/Unit/Cop.cs)
+  ⎿  Added 1 line, removed 4 lines
+      1 -using System;                                                   
+      1  using System.Collections.Generic;
+      3 -using System.Threading;                                         
+      4 -using Cysharp.Threading.Tasks;                                  
+      2  using UnityEngine;
+      3  
+      4  public class Cop : Unit
+     ...
+       6      [Header("Object")]
+       7      [SerializeField] protected Transform[] propMainPar;
+       8      [SerializeField] protected Transform handCuffPar;
+      12 -                                                               
+       9 +                                                               
+      10      protected Dictionary<Define.PooledEnum, Stack<PooledObject>
+          > propStack = new();
+      11  }
+
+● 상속 계층이 올바르게 구성되었습니다.
+
+  Unit
+  ├── Cop                          ← propStack, propMainPar, handCuffPar 공유
+  │   ├── Player                   ← 조작, prop 스택 로직
+  │   └── Cop_Worker               ← Tray ↔ spawnPos 순찰 로직
+  └── Worker                       ← Rock 채굴 순찰 로직
+  └── Prisoner                     ← 수갑 로직
+
+  Cop에서 propStack, propMainPar, handCuffPar를 protected로 정의하여 Player와
+  Cop_Worker 모두 접근 가능합니다. Cop.cs에서 사용하지 않는 System.Threading,
+  Cysharp.Threading.Tasks, System using도 제거했습니다.
+
+✻ Churned for 1m 55s
+
+❯ PickinStateController.cs 제외하고 TryGetComponent의 out 타입이 Unit.cs인      
+  부분들을 모두 Cop.cs로 변경해줘                                               
+
+  Searched for 2 patterns (ctrl+o to expand)
+● TrayTrigger.cs와 ZoneTrigger.cs가 대상입니다. 수정할게요.
+
+  Read 2 files (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Controller/TrayTrigger.cs)
+  ⎿  Added 1 line, removed 1 line
+      12          if (deltaTime < Define.PROPSETTING_TIME) return;
+      13          if (machine.HandCuffStk.Count == 0) return;
+      14  
+      15 -        if (other.TryGetComponent(out Unit unit))              
+      15 +        if (other.TryGetComponent(out Cop unit))               
+      16          {
+      17              machine.HandCuffStk.Pop().Release();
+      18              unit.SetProp(Define.PooledEnum.Prop_Handcuff);
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Controller/TrayTrigger.cs)
+  ⎿  Added 1 line, removed 1 line
+      22  
+      23      private void OnTriggerExit(Collider other)
+      24      {
+      25 -        if (other.TryGetComponent(out Unit _))                 
+      25 +        if (other.TryGetComponent(out Cop _))                  
+      26              deltaTime = 0f;
+      27      }
+      28  }
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Controller/ZoneTrigger/ZoneTrigge
+        r.cs)
+  ⎿  Added 3 lines, removed 3 lines
+      22  
+      23      private void OnTriggerEnter(Collider other)
+      24      {
+      25 -        if (other.TryGetComponent(out Unit unit))              
+      25 +        if (other.TryGetComponent(out Cop unit))               
+      26          {
+      27              OnEnterCallback(unit);
+      28          }
+     ...
+      34          if (deltaTime < Define.PROPSETTING_TIME)
+      35              return;
+      36  
+      37 -        if (other.TryGetComponent(out Unit unit))              
+      37 +        if (other.TryGetComponent(out Cop unit))               
+      38          {
+      39              if (unit.ConsumeProp(propType))
+      40              {
+     ...
+      46  
+      47      private void OnTriggerExit(Collider other)
+      48      {
+      49 -        if (other.TryGetComponent(out Unit unit))              
+      49 +        if (other.TryGetComponent(out Cop unit))               
+      50          {
+      51              deltaTime = 0f;
+      52              OnExitCallback(unit);
+
+● 변경된 파일과 위치를 확인할게요.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● 총 5곳 변경 완료했습니다:
+
+  - TrayTrigger.cs (2곳): OnTriggerStay, OnTriggerExit
+  - ZoneTrigger.cs (3곳): OnTriggerEnter, OnTriggerStay, OnTriggerExit
+
+  Cop : Unit → Player : Cop, Cop_Worker : Cop 상속 구조이므로, Player와
+  Cop_Worker는 모두 Cop로 감지됩니다. Worker, Prisoner 등 Cop를 상속받지 않는
+  Unit은 트리거에서 감지되지 않습니다.
+
+✻ Cooked for 51s
+
+❯ cop_worker.cs 도 player.cs를 참고해서 Prop_Handcuff를 생성하는 SetProp 함수와 
+   ConsumeProp 함수를 만들어줘                                                  
+
+● Player.cs의 Prop_Handcuff 처리 부분을 참고해서 구현할게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Cop_Worker.cs)
+  ⎿  Added 24 lines
+       8      private Vector3 spawnPos;
+       9      private CancellationTokenSource patrolCts;
+      10  
+      11 +    protected override void Awake()                            
+      12 +    {                                                          
+      13 +        base.Awake();                                          
+      14 +        propStack.Add(Define.PooledEnum.Prop_Handcuff, new Stac
+         +k<PooledObject>());                                            
+      15 +    }                                                          
+      16 +                                                               
+      17 +    public override void SetProp(Define.PooledEnum prop)       
+      18 +    {                                                          
+      19 +        if (prop != Define.PooledEnum.Prop_Handcuff) return;   
+      20 +                                                               
+      21 +        var propObj = ObjectPool.GetObject<Prop>(prop, handCuff
+         +Par);                                                          
+      22 +        propObj.SetLocalPosition(Vector3.up * Define.STACK_GAP 
+         +* propStack[prop].Count);                                      
+      23 +        propStack[prop].Push(propObj);                         
+      24 +    }                                                          
+      25 +                                                               
+      26 +    public override bool ConsumeProp(Define.PooledEnum propType
+         +)                                                              
+      27 +    {                                                          
+      28 +        if (propType != Define.PooledEnum.Prop_Handcuff) return
+         + false;                                                        
+      29 +        if (!propStack[propType].TryPop(out var propObj)) retur
+         +n false;                                                       
+      30 +                                                               
+      31 +        propObj.Release();                                     
+      32 +        return true;                                           
+      33 +    }                                                          
+      34 +                                                               
+      35      public void StartPatrol(Vector3 spawnPos)
+      36      {
+      37          this.spawnPos = spawnPos;
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Stack<PooledObject>은 System.Collections.Generic이 필요합니다. using을
+  추가할게요.
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Cop_Worker.cs)
+  ⎿  Added 1 line
+      1  using System;
+      2 +using System.Collections.Generic;                               
+      3  using System.Threading;
+      4  using Cysharp.Threading.Tasks;
+      5  using UnityEngine;
+
+● 변경 요약:
+
+  - Awake() — propStack에 Prop_Handcuff 키 초기화 (Player와 동일한 패턴)
+  - SetProp() — Prop_Handcuff만 처리, handCuffPar에 풀에서 꺼내 STACK_GAP
+  간격으로 적재 후 스택에 push
+  - ConsumeProp() — Prop_Handcuff만 처리, 스택에서 pop해 Release() 후 true 반환
+  (비어있으면 false)
+
+  Player와의 차이점: Cop_Worker는 Prop_Handcuff 외 다른 prop 타입은 무시하고,
+  money/par 슬롯 관리 로직 없이 단순하게 구현했습니다.
+
+✻ Cooked for 47s
+
+❯ Cop_Worker와 Player가 Cop을 상속받고 있으니까 동일한 기능을 하는 함수들은     
+  오버라이드 하도록 리팩토링 해줘                                               
+
+● SetProp과 ConsumeProp의 공통 로직(pop/push, release, 풀에서 꺼내기)을 Cop으로
+  올리고 각 자식이 오버라이드하도록 리팩토링할게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● 공통 로직을 Cop으로 올리고 각 자식을 단순화합니다.
+
+● Write(D:/Supercent/Supercent/Assets/Scripts/Unit/Cop.cs)
+  ⎿  Added 19 lines, removed 1 line
+       6      [Header("Object")]
+       7      [SerializeField] protected Transform[] propMainPar;
+       8      [SerializeField] protected Transform handCuffPar;
+       9 -                                                               
+       9 +                                                               
+      10      protected Dictionary<Define.PooledEnum, Stack<PooledObject>
+          > propStack = new();
+      11 +                                                               
+      12 +    public override void SetProp(Define.PooledEnum prop)       
+      13 +    {                                                          
+      14 +        if (!propStack.ContainsKey(prop)) return;              
+      15 +                                                               
+      16 +        var propObj = ObjectPool.GetObject<Prop>(prop, handCuff
+         +Par);                                                          
+      17 +        propObj.SetLocalPosition(Vector3.up * Define.STACK_GAP 
+         +* propStack[prop].Count);                                      
+      18 +        propStack[prop].Push(propObj);                         
+      19 +    }                                                          
+      20 +                                                               
+      21 +    public override bool ConsumeProp(Define.PooledEnum propType
+         +)                                                              
+      22 +    {                                                          
+      23 +        if (!propStack.ContainsKey(propType)) return false;    
+      24 +        if (!propStack[propType].TryPop(out var propObj)) retur
+         +n false;                                                       
+      25 +                                                               
+      26 +        propObj.Release();                                     
+      27 +        return true;                                           
+      28 +    }                                                          
+      29  }
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Cop_Worker.cs)
+  ⎿  Added 2 lines, removed 8 lines
+      18      public override void SetProp(Define.PooledEnum prop)
+      19      {
+      20          if (prop != Define.PooledEnum.Prop_Handcuff) return;
+      21 -                                                               
+      22 -        var propObj = ObjectPool.GetObject<Prop>(prop, handCuff
+         -Par);                                                          
+      23 -        propObj.SetLocalPosition(Vector3.up * Define.STACK_GAP 
+         -* propStack[prop].Count);                                      
+      24 -        propStack[prop].Push(propObj);                         
+      21 +        base.SetProp(prop);                                    
+      22      }
+      23  
+      24      public override bool ConsumeProp(Define.PooledEnum propType
+          )
+      25      {
+      26          if (propType != Define.PooledEnum.Prop_Handcuff) return
+           false;
+      30 -        if (!propStack[propType].TryPop(out var propObj)) retur
+         -n false;                                                       
+      31 -                                                               
+      32 -        propObj.Release();                                     
+      33 -        return true;                                           
+      27 +        return base.ConsumeProp(propType);                     
+      28      }
+      29  
+      30      public void StartPatrol(Vector3 spawnPos)
+
+● 이제 Player도 수정합니다. Prop_Handcuff는 base.SetProp, ConsumeProp은
+  base.ConsumeProp을 활용하도록요.
+
+  Read 1 file (ctrl+o to expand)
+
+● Player의 SetProp/ConsumeProp을 base 활용으로 정리할게요.
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Player.cs)  ⎿  Added 6 lines, removed 21 lines
+      65  
+      66      public override void SetProp(Define.PooledEnum prop)
+      67      {
+      68 -        base.SetProp(prop);                                    
+      68          if (prop == Define.PooledEnum.Prop_Handcuff)
+      69          {
+      71 -            GetObject(prop, handCuffPar);                      
+      70 +            base.SetProp(prop);                                
+      71              return;
+      72          }
+      73  
+     ...
+      77              return;
+      78          }
+      79  
+      81 -        // 처음 획득하는 종류면 다음 빈 par 슬롯 배정          
+      80          if (!parOrder.Contains(prop))
+      81          {
+      82              if (parOrder.Count >= propMainPar.Length)
+     ...
+       94      private void GetObject(Define.PooledEnum prop, Transform p
+           ar)
+       95      {
+       96          var propObj = ObjectPool.GetObject<Prop>(prop, par);
+       99 -        propObj.SetLocalPosition(Vector3.zero + Vector3.up * D
+          -efine.STACK_GAP * propStack[prop].Count);                     
+      100 -        var quaternion = Quaternion.identity;                 
+      101 -        switch (prop)                                         
+      102 -        {                                                     
+      103 -            case Define.PooledEnum.Prop_Rock:                 
+      104 -                quaternion = Quaternion.Euler(Vector3.up * 90f
+          -);                                                            
+      105 -                break;                                        
+      106 -            case Define.PooledEnum.Prop_Money:                
+      107 -                quaternion = Quaternion.Euler(Vector3.up * 90f
+          -);                                                            
+      108 -                PlayerManager.instance.GetMoney();            
+      109 -                break;                                        
+      110 -        }                                                     
+       97 +        propObj.SetLocalPosition(Vector3.up * Define.STACK_GAP
+          + * propStack[prop].Count);                                    
+       98 +        var quaternion = Quaternion.Euler(Vector3.up * 90f);  
+       99 +        if (prop == Define.PooledEnum.Prop_Money)             
+      100 +            PlayerManager.instance.GetMoney();                
+      101  
+      102          propObj.SetLocalRotation(quaternion);
+      113 -                                                              
+      103          propStack[prop].Push(propObj);
+      104      }
+      105  
+      106      public override bool ConsumeProp(Define.PooledEnum propTyp
+           e)
+      107      {
+      119 -        base.ConsumeProp(propType);                           
+      120 -        if (!propStack[propType].TryPop(out var propObj))     
+      121 -            return false;                                     
+      108 +        if (!base.ConsumeProp(propType)) return false;        
+      109  
+      110          if (propType == Define.PooledEnum.Prop_Money)
+      111              PlayerManager.instance.ConsumeMoney();
+      112  
+      126 -        propObj.Release();                                    
+      127 -                                                              
+      113          if (propStack[propType].Count == 0)
+      114              UpdateStackPar();
+      115  
+
+● 변경 요약:
+
+  Cop.cs — SetProp / ConsumeProp 기본 구현 추가:
+  - SetProp: handCuffPar에 풀에서 꺼내 STACK_GAP 간격 배치 후 push (키 없으면
+  early return)
+  - ConsumeProp: pop → release → true (키 없거나 스택 비어있으면 false)
+
+  Cop_Worker.cs — Prop_Handcuff 필터 후 base 위임:
+  SetProp  → if (prop != Prop_Handcuff) return; base.SetProp(prop);
+  ConsumeProp → if (propType != Prop_Handcuff) return false; return
+  base.ConsumeProp(propType);
+
+  Player.cs — SetProp / ConsumeProp 단순화:
+  - Prop_Handcuff → base.SetProp(prop) 위임 (중복 GetObject 호출 제거)
+  - GetObject: Rock/Money 공통 rotation 90도로 통합, Vector3.zero 불필요 제거
+  - ConsumeProp: base.ConsumeProp이 pop+release 처리, Player는 money/parOrder
+  후처리만 담당
+
+✻ Worked for 1m 50s
+
+❯ Cop_Worker가 desk로 돌아오는 조건으로 3초 뒤에 돌아오는데,                    
+  Machine.handcuffstk가 0이 되거나, propStack[Prop_Handcuff] >=                 
+  COP_HANDCUFF_THRESHHOLD 의 경우에 3초가 되지 않아도 돌아올 수 있어            
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(D:/Supercent/Supercent/Assets/Scripts/Unit/Cop_Worker.cs)
+  ⎿  Added 7 lines, removed 2 lines
+      51  
+      52              await MoveToTask(trayPos, ct);
+      53  
+      54 -            if (machine.HandCuffStk.Count < Define.COP_HANDCUFF
+         -_THRESHOLD)                                                    
+      54 +            var handcuffStack = propStack[Define.PooledEnum.Pro
+         +p_Handcuff];                                                   
+      55 +            var shouldWait = machine.HandCuffStk.Count > 0     
+      56 +                          && handcuffStack.Count < Define.COP_H
+         +ANDCUFF_THRESHOLD;                                             
+      57 +                                                               
+      58 +            if (shouldWait)                                    
+      59              {
+      60                  await UniTask.WhenAny(
+      57 -                    UniTask.WaitUntil(() => machine.HandCuffStk
+         -.Count >= Define.COP_HANDCUFF_THRESHOLD, cancellationToken: ct)
+         -,                                                              
+      61 +                    UniTask.WaitUntil(() => machine.HandCuffStk
+         +.Count == 0, cancellationToken: ct),                           
+      62 +                    UniTask.WaitUntil(() => handcuffStack.Count
+         + >= Define.COP_HANDCUFF_THRESHOLD, cancellationToken: ct),     
+      63                      UniTask.Delay(TimeSpan.FromSeconds(Define.C
+          OP_HANDCUFF_WAIT_TIME), cancellationToken: ct)
+      64                  );
+      65              }
+
+● 변경 내용:
+
+  기존 대기 조건: HandCuffStk < threshold이면 최대 3초 대기
+
+  새 대기 조건 (shouldWait):
+  - machine.HandCuffStk.Count > 0 — 기계에 수거할 핸드커프가 있을 때만 대기
+  - handcuffStack.Count < COP_HANDCUFF_THRESHOLD — 이미 충분히 들고 있으면 즉시
+  복귀
+
+  WhenAny 조기 복귀 조건 (3초 이전):
+  1. machine.HandCuffStk.Count == 0 — 기계 소진
+  2. handcuffStack.Count >= COP_HANDCUFF_THRESHOLD — 보유 핸드커프 임계치 도달
+  3. Delay(COP_HANDCUFF_WAIT_TIME) — 3초 타임아웃
+
+✻ Sautéed for 37s
