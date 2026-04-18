@@ -55,7 +55,7 @@ public class Player : Unit
                 drill.SetActive(picking);
                 return;
         }
-        
+
         // Lv 3 이상
         humanBase.SetActive(!picking);
         tractor.SetActive(picking);
@@ -187,7 +187,8 @@ public class Player : Unit
     public void LevelUp()
     {
         level++;
-        var effect = ObjectPool.GetObject<Pool_Particle>(Define.PooledEnum.LevelUp_Particle, transform);
-        effect.SetLocalPosition(Vector3.up * 0.1f);
+        var effect =
+            ObjectPool.GetObject<Pool_Particle>(Define.PooledEnum.LevelUp_Particle, GameManager.instance.EffectPar);
+        effect.SetGlobalPosition(transform.position + Vector3.up * 0.1f);
     }
 }

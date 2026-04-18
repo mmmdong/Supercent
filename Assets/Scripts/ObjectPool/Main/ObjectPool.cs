@@ -6,9 +6,6 @@ using static Define;
 
 public class ObjectPool : MonoBehaviour
 {
-    private static readonly string PATH_OBJECTS = "Prefabs/PooledObject";
-    private static readonly string PATH_UNITS = "Prefabs/Unit";
-
     private static Dictionary<string, Queue<PooledObject>> pooledObjects =
         new Dictionary<string, Queue<PooledObject>>();
 
@@ -41,7 +38,6 @@ public class ObjectPool : MonoBehaviour
         }
         catch (KeyNotFoundException)
         {
-            
         }
 
         return null;

@@ -4,17 +4,23 @@ public class Define
 {
     #region STRING
 
+    // Animation Hash
     public static readonly string ANIMATION_RUN = "Run";
     public static readonly string ANIMATION_IDLE = "Idle";
     public static readonly string ANIMATION_PICKING = "Picking";
     public static readonly string ANIMATION_TAKE = "Take";
-
     public static readonly string CHECKPOINT_OPEN = "Open"; 
+    
+    // Path
+    public static readonly string PATH_OBJECTS = "Prefabs/PooledObject";
+    
     #endregion
 
     #region INTEGER
 
     public static readonly int MONEY_COST = 10;
+    public static readonly int WORKER_COUNT = 3;
+    public static readonly int PRISONER_MONEY_COUNT = 2;
 
     #endregion
 
@@ -22,6 +28,8 @@ public class Define
 
     public static readonly float PROPSETTING_TIME = 0.05f;
     public static readonly float STACK_GAP = 0.15f;
+    public static readonly float ARRIVE_THRESHOLD = 0.15f;
+    public static readonly float WORKER_PATROL_DISTANCE = 14f;
 
     #endregion
     
@@ -35,20 +43,22 @@ public class Define
 
     public enum PooledEnum
     {
-        // ¿ÀºêÁ§Æ®
+        // ë°”ë‹¥ êµ¬ì„±
         Rock,
         
-        // ÇÁ¶ø
+        // Prop
         Prop_Rock,
         Prop_Money,
         Prop_Handcuff,
         
-        // ÆÄÆ¼Å¬
+        // Effect
         Hit_Particle,
         LevelUp_Particle,
         
-        // À¯´Ö
+        // Unit
         Prisoner,
+        Worker,
+        Cop
     }
 
     public enum ConsumeDest

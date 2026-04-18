@@ -24,7 +24,7 @@ public class Rock : PooledObject
         base.Release();
         isInit = false;
         MapManager.instance.Respawn(transform.localPosition);
-        var hit = ObjectPool.GetObject<Pool_Particle>(Define.PooledEnum.Hit_Particle);
-        hit.SetLocalPosition(transform.localPosition + Vector3.up * 0.5f);
+        var hit = ObjectPool.GetObject<Pool_Particle>(Define.PooledEnum.Hit_Particle, GameManager.instance.EffectPar);
+        hit.SetGlobalPosition(transform.position + Vector3.up * 0.5f);
     }
 }
