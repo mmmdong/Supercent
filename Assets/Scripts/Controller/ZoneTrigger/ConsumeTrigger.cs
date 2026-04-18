@@ -27,22 +27,24 @@ public class ConsumeTrigger : ZoneTrigger
 
     private void Start()
     {
-        costText.text = $"{cost}";
+        costText.text = $"$ {cost}";
     }
 
     private void UpdateCostText()
     {
         cost *= 2;
-        costText.text = $"{cost}";
+        costText.text = $"$ {cost}";
     }
 
-    protected override void OnEnterCallback(Player player)
+    protected override void OnEnterCallback(Unit unit)
     {
-        base.OnEnterCallback(player);
+        var player = unit as Player;
+        base.OnEnterCallback(unit);
         backGround.color = Color.green;
         switch (consumeDestType)
         {
             case Define.ConsumeDest.Hire_Cop:
+                SetCallback(UnitManager.instance.SpawnCop);
                 break;
             case Define.ConsumeDest.Hire_Worker:
                 SetCallback(UnitManager.instance.SpawnWorkers);
@@ -53,9 +55,9 @@ public class ConsumeTrigger : ZoneTrigger
         }
     }
 
-    public override void OnStayCallback(Player player)
+    public override void OnStayCallback(Unit unit)
     {
-        base.OnStayCallback(player);
+        base.OnStayCallback(unit);
         accumulatedCost += Define.MONEY_COST;
         gauge.fillAmount = (float)accumulatedCost / cost;
 
@@ -77,9 +79,9 @@ public class ConsumeTrigger : ZoneTrigger
         }
     }
 
-    protected override void OnExitCallback(Player player)
+    protected override void OnExitCallback(Unit unit)
     {
-        base.OnExitCallback(player);
+        base.OnExitCallback(unit);
         backGround.color = Color.white;
     }
 }

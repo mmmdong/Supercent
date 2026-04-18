@@ -44,7 +44,7 @@ public class Player : Unit
         => Quaternion.Euler(0, mainCam.transform.rotation.eulerAngles.y, 0) * base.SetDirection(direction);
 
     public void SetPickingMode(bool picking)
-    { 
+    {
         switch (level)
         {
             case 1:
@@ -60,12 +60,7 @@ public class Player : Unit
         humanBase.SetActive(!picking);
         tractor.SetActive(picking);
     }
-
-    public void SetTakeMode(bool take)
-    {
-        animator.SetBool(Define.ANIMATION_TAKE, take);
-    }
-
+    
     public override void OnPickingEvent()
     {
         rockDestroyController.RockDestroy();
@@ -122,8 +117,9 @@ public class Player : Unit
         propStack[prop].Push(propObj);
     }
 
-    public bool DropProp(Define.PooledEnum propType)
+    public override bool ConsumeProp(Define.PooledEnum propType)
     {
+        base.ConsumeProp(propType);
         if (!propStack[propType].TryPop(out var propObj))
             return false;
 

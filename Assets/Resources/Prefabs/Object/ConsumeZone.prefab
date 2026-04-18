@@ -119,6 +119,7 @@ MonoBehaviour:
   propType: 2
   propTray:
   - {fileID: 8900973926787607096}
+  consumeDestType: 0
   backGround: {fileID: 5942072506157439954}
   gauge: {fileID: 8143587226155689006}
   cost: 50
@@ -179,7 +180,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -0.51}
-  m_SizeDelta: {x: 2, y: 2}
+  m_SizeDelta: {x: 3.5, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3339175099706251940
 CanvasRenderer:

@@ -62,6 +62,11 @@ public class Unit : PooledObject
     {
     }
 
+    public virtual bool ConsumeProp(Define.PooledEnum propType)
+    {
+        return false;
+    }
+
     public virtual void SetProp(Define.PooledEnum prop)
     {
     }

@@ -22,9 +22,9 @@ public class ZoneTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.TryGetComponent(out Player player))
+        if (other.TryGetComponent(out Unit unit))
         {
-            OnEnterCallback(player);
+            OnEnterCallback(unit);
         }
     }
 
@@ -34,34 +34,34 @@ public class ZoneTrigger : MonoBehaviour
         if (deltaTime < Define.PROPSETTING_TIME)
             return;
 
-        if (other.TryGetComponent(out Player player))
+        if (other.TryGetComponent(out Unit unit))
         {
-            if (player.DropProp(propType))
+            if (unit.ConsumeProp(propType))
             {
                 deltaTime = 0f;
-                OnStayCallback(player);
+                OnStayCallback(unit);
             }
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.TryGetComponent(out Player player))
+        if (other.TryGetComponent(out Unit unit))
         {
             deltaTime = 0f;
-            OnExitCallback(player);
+            OnExitCallback(unit);
         }
     }
 
-    protected virtual void OnEnterCallback(Player player)
+    protected virtual void OnEnterCallback(Unit unit)
     {
     }
 
-    public virtual void OnStayCallback(Player player)
+    public virtual void OnStayCallback(Unit unit)
     {
     }
 
-    protected virtual void OnExitCallback(Player player)
+    protected virtual void OnExitCallback(Unit unit)
     {
     }
 }

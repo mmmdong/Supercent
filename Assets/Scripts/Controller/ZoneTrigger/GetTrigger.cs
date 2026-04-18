@@ -12,15 +12,15 @@ public class GetTrigger : ZoneTrigger
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
     }
 
-    protected override void OnEnterCallback(Player player)
+    protected override void OnEnterCallback(Unit unit)
     {
-        base.OnEnterCallback(player);
+        base.OnEnterCallback(unit);
         spriteRenderer.color = Color.green;
     }
 
-    public override void OnStayCallback(Player player)
+    public override void OnStayCallback(Unit unit)
     {
-        base.OnStayCallback(player);
+        base.OnStayCallback(unit);
         if (propTray.Length > 1)
         {
             var index = propStack.Count / propTray.Length;
@@ -40,9 +40,9 @@ public class GetTrigger : ZoneTrigger
         }
     }
 
-    protected override void OnExitCallback(Player player)
+    protected override void OnExitCallback(Unit unit)
     {
-        base.OnExitCallback(player);
+        base.OnExitCallback(unit);
         spriteRenderer.color = Color.white;
     }
 }

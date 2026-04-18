@@ -12,6 +12,13 @@ public class UnitManager : MonoBehaviour
             instance = this;
     }
 
+    public void SpawnCop()
+    {
+        var deskZone = MapManager.instance.Desk.DeskZone;
+        var cop = ObjectPool.GetObject<Cop>(Define.PooledEnum.Cop, transform);
+        cop.transform.position = deskZone.transform.position;
+    }
+
     public void SpawnWorkers()
     {
         for (var i = 0; i < Define.WORKER_COUNT; i++)

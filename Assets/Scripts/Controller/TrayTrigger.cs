@@ -14,31 +14,30 @@ public class TrayTrigger : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         cts = new CancellationTokenSource();
-        if (other.TryGetComponent(out Player player))
+        if (other.TryGetComponent(out Unit unit))
         {
-            SetProp(player).Forget();
+            SetProp(unit).Forget();
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.TryGetComponent(out Player player))
+        if (other.TryGetComponent(out Unit unit))
         {
             cts.Cancel();
         }
     }
 
-    private async UniTaskVoid SetProp(Player player)
+    private async UniTaskVoid SetProp(Unit Unit)
     {
         await UniTask.WaitUntil(() => machine.HandCuffStk.Count > 0, cancellationToken: cts.Token);
-        player.SetTakeMode(true);
         while (true)
         {
             await UniTask.WaitUntil(() => machine.HandCuffStk.Count > 0, cancellationToken: cts.Token);
 
             var handCuff = machine.HandCuffStk.Pop() as Prop_Handcuff;
             handCuff.Release();
-            player.SetProp(Define.PooledEnum.Prop_Handcuff);
+            Unit.SetProp(Define.PooledEnum.Prop_Handcuff);
             await UniTask.Delay(TimeSpan.FromSeconds(Define.PROPSETTING_TIME), cancellationToken: cts.Token);
         }
     }

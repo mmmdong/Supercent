@@ -21,7 +21,9 @@ public class MapManager : MonoBehaviour
     [SerializeField] private BankTrigger bank;
     [SerializeField] private MachineController machine;
     public MachineController Machine => machine;
-    
+    [SerializeField] private DeskController desk;
+    public DeskController Desk => desk;
+
     public BankTrigger Bank => bank;
 
     private void Awake()
