@@ -65,10 +65,9 @@ public class Player : Cop
 
     public override void SetProp(Define.PooledEnum prop)
     {
-        base.SetProp(prop);
         if (prop == Define.PooledEnum.Prop_Handcuff)
         {
-            GetObject(prop, handCuffPar);
+            base.SetProp(prop);
             return;
         }
 
@@ -78,7 +77,6 @@ public class Player : Cop
             return;
         }
 
-        // 처음 획득하는 종류면 다음 빈 par 슬롯 배정
         if (!parOrder.Contains(prop))
         {
             if (parOrder.Count >= propMainPar.Length)
@@ -96,34 +94,21 @@ public class Player : Cop
     private void GetObject(Define.PooledEnum prop, Transform par)
     {
         var propObj = ObjectPool.GetObject<Prop>(prop, par);
-        propObj.SetLocalPosition(Vector3.zero + Vector3.up * Define.STACK_GAP * propStack[prop].Count);
-        var quaternion = Quaternion.identity;
-        switch (prop)
-        {
-            case Define.PooledEnum.Prop_Rock:
-                quaternion = Quaternion.Euler(Vector3.up * 90f);
-                break;
-            case Define.PooledEnum.Prop_Money:
-                quaternion = Quaternion.Euler(Vector3.up * 90f);
-                PlayerManager.instance.GetMoney();
-                break;
-        }
+        propObj.SetLocalPosition(Vector3.up * Define.STACK_GAP * propStack[prop].Count);
+        var quaternion = Quaternion.Euler(Vector3.up * 90f);
+        if (prop == Define.PooledEnum.Prop_Money)
+            PlayerManager.instance.GetMoney();
 
         propObj.SetLocalRotation(quaternion);
-
         propStack[prop].Push(propObj);
     }
 
     public override bool ConsumeProp(Define.PooledEnum propType)
     {
-        base.ConsumeProp(propType);
-        if (!propStack[propType].TryPop(out var propObj))
-            return false;
+        if (!base.ConsumeProp(propType)) return false;
 
         if (propType == Define.PooledEnum.Prop_Money)
             PlayerManager.instance.ConsumeMoney();
-
-        propObj.Release();
 
         if (propStack[propType].Count == 0)
             UpdateStackPar();

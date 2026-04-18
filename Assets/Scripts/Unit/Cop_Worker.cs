@@ -18,19 +18,13 @@ public class Cop_Worker : Cop
     public override void SetProp(Define.PooledEnum prop)
     {
         if (prop != Define.PooledEnum.Prop_Handcuff) return;
-
-        var propObj = ObjectPool.GetObject<Prop>(prop, handCuffPar);
-        propObj.SetLocalPosition(Vector3.up * Define.STACK_GAP * propStack[prop].Count);
-        propStack[prop].Push(propObj);
+        base.SetProp(prop);
     }
 
     public override bool ConsumeProp(Define.PooledEnum propType)
     {
         if (propType != Define.PooledEnum.Prop_Handcuff) return false;
-        if (!propStack[propType].TryPop(out var propObj)) return false;
-
-        propObj.Release();
-        return true;
+        return base.ConsumeProp(propType);
     }
 
     public void StartPatrol(Vector3 spawnPos)
